@@ -97,20 +97,3 @@ elif mode == "Scam/Email Checker":
 st.markdown("---")
 st.markdown("Magami AI powered by Hugging Face model - flan-t5-large")
 st.markdown("Na beginner friendly Python project for knowledge showcase.")
-
-
-Here’s your complete beginner-friendly Python code using Hugging Face (no OpenAI key required). It includes:
-
-Emotional advice (expanded emotions)
-
-Separate modes for Business and Cybersecurity
-
-Fallback handling for off-topic questions
-
-Unlimited text input with a Send button
-
-Responses in Pidgin
-
-
-You can now copy, paste, and run it in Streamlit. Let me know if you want enhancements like saving chat history or adding user sessions.
-
