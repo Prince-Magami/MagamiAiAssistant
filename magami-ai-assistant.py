@@ -2,7 +2,13 @@ import streamlit as st
 import random
 import validators
 from huggingface_hub import InferenceClient
-from textblob import TextBlob
+from textblob import TextBlob 
+
+# Loads the key from Streamlit secrets
+api_key = st.secrets["huggingface"]["api_key"]
+
+# Initialize the Hugging Face client
+client = InferenceClient(token=api_key)
 
 # --- Setup ---
 st.set_page_config(page_title="Prince Magami AI Assistant", page_icon="🤖", layout="centered")
