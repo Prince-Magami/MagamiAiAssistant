@@ -3,7 +3,6 @@ from cohere import Client
 from random import choice
 import uuid
 
-# Initialize Cohere client with your API key stored securely in Streamlit secrets
 cohere_api_key = st.secrets["cohere_api_key"]
 co = Client(cohere_api_key)
 
