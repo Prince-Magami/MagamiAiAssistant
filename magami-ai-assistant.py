@@ -115,7 +115,7 @@ def get_fallback_response():
 
 # UI layout and logic
 
-st.set_page_config(page_title="Magami AI Assistant", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="Prince Magami AI Assistant", page_icon="🤖", layout="centered")
 
 st.markdown("""
 <style>
