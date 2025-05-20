@@ -10,10 +10,10 @@ st.set_page_config(page_title="Magami AI Assistant & Chatbox", page_icon="🤖")
 
 #PAGE TITLE
 
-st.title("Magami AI Assistant & Chatbox") st.markdown(""" By Abubakar Muhammad Magami
-Fellow ID: FE/23/75909764 | 3MTT Cohort 3
+st.title("Magami AI Assistant & Chatbox") 
 
-""")
+st.markdown(""" By Abubakar Muhammad Magami
+Fellow ID: FE/23/75909764 | 3MTT Cohort 3 """)
 
 #MODE SELECTION
 
