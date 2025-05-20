@@ -13,9 +13,8 @@ An AI-powered web app for the 3MTT Knowledge Showcase. It has three powerful fea
 ## Tech Stack
 - Python
 - Streamlit
-- hugging face 
-- TextBlob
-- Validators
+- Cohere
+- UUID
 
 
 ## Notes
