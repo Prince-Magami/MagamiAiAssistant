@@ -3,19 +3,18 @@ import openai
 from textblob import TextBlob
 import validators
 
-# Load OpenAI API key from Streamlit secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 st.set_page_config(page_title="Prince Magami AI Assistant & Chatbox", page_icon="🤖")
 
-st.title("Prince Magami AI Assistant & Chatbox")
+st.title("Prince Magami 👑 AI Assistant & Chatbox")
 st.markdown("""
 By Abubakar Muhammad Magami | FellowID: FE/23/75909764 | Cohort 3 - 3MTT  
 **Magami AI Assistant and Chatbox**  
 Choose a mode and language to get started.
 """)
 
-# Language selection (Pidgin or English)
+Language selection (Pidgin or English)
 lang = st.radio("Choose language:", ("Pidgin English", "English"))
 
 def ask_openai(prompt):
@@ -90,7 +89,7 @@ mode = st.selectbox("Select mode:", [
 # -- Scam/Email Checker Mode --
 if mode == "Scam/Email Checker":
     st.subheader("Scam Detector")
-    user_input = st.text_area("Paste email or link you wan check:", height=150)
+    user_input = st.text_area("Paste the email or link you want to check:", height=150)
     if st.button("Scan am!") and user_input.strip():
         if validators.url(user_input.strip()):
             prompt = (f"Is this link a scam? Link: {user_input.strip()}. "
@@ -104,7 +103,7 @@ if mode == "Scam/Email Checker":
         st.success(result)
 
 # -- Emotional Advice Chat Mode --
-elif mode == "Emotional Advice Chat":
+elif mode == "Emotional Advice ChatBox":
     st.subheader("Talk to your AI Buddy")
     feelings = st.text_area("How you dey feel? Talk true.", height=200)
     if st.button("Send") and feelings.strip():
@@ -139,7 +138,7 @@ elif mode == "Business Helper":
         st.success(result)
 
 # -- Cybersecurity tips --
-elif mode == "Cybersecurity Advice":
+elif mode == "Cybersecurity Tips":
     st.subheader("Cybersecurity Awareness & Tips")
     cyber_input = st.text_area("Ask about cybersecurity, risks, tips, or concerns:", height=200)
     if st.button("Send") and cyber_input.strip():
