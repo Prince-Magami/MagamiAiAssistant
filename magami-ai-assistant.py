@@ -140,8 +140,11 @@ body {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Magami AI Assistant & Chatbox")
+st.title("Prince Magami AI Assistant & Chatbox")
+st.markdown("FE/23/75909764")
+st.markdown("3MTT NIGERIA | COHORT 3 | KNOWLEDGE SHOWCASE")
 st.markdown("By Abubakar Muhammad Magami")
+st.markdown("magamiabu@gmail.com")
 st.markdown("---")
 
 # Short description about AI scope
@@ -160,10 +163,10 @@ st.info("""
 """)
 
 # Language selector
-lang = st.selectbox("Choose language / Zabi harshe:", languages)
+lang = st.selectbox("Choose language: ", languages)
 
 # Mode selector
-mode = st.selectbox("Choose mode / Zabi hanya:", modes)
+mode = st.selectbox("Choose mode: ", modes)
 
 # User input area (text area with send button, enter inserts newline)
 user_input = st.text_area("Type your message:", height=100, key="input_area")
