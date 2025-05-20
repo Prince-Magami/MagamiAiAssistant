@@ -239,6 +239,21 @@ if send and user_input.strip() != "":
     if prompt:
         ai_response = get_cohere_response(prompt)
 
-        # If AI response seems empty or irrelevant, fallback
-        if len(ai_response) < 10 or "error" in ai
+        # If AI response seems empty or error, use fallback
+        if len(ai_response) < 10 or "error" in ai_response.lower():
+            ai_response = get_fallback_response()
+
+        # Append to chat history
+        st.session_state.chat_history.append(("You", user_text))
+        st.session_state.chat_history.append(("Magami AI", ai_response))
+
+        # Clear input box
+        st.session_state.input_area = ""
+
+# Show chat history messages
+for speaker, message in st.session_state.chat_history:
+    if speaker == "You":
+        st.markdown(f"**You:** {message}")
+    else:
+        st.markdown(f"**Magami AI:** {message}")
 
