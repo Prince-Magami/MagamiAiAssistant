@@ -2,7 +2,7 @@ import streamlit as st import openai from textblob import TextBlob import valida
 
 CONFIG
 
-openai.api_key = "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"
+openai.api_key = "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"
 
 st.set_page_config(page_title="Magami AI Assistant & Chatbox", page_icon="🤖")
 
