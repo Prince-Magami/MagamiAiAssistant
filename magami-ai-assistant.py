@@ -1,99 +1,117 @@
 import streamlit as st
-import requests
+import random
 import validators
+from huggingface_hub import InferenceClient
+from textblob import TextBlob
 
-# App title and config
-st.set_page_config(page_title="Magami AI Assistant & Chatbox")
-st.title("Magami AI Assistant & Chatbox")
+# --- Setup ---
+st.set_page_config(page_title="Magami AI Assistant", page_icon="🤖", layout="centered")
+client = InferenceClient(model="mistralai/Mixtral-8x7B-Instruct-v0.1")
+
+# --- Session State Init ---
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+
+# --- Mode Selection ---
+st.title("Magami AI Assistant")
 st.markdown("""
-**By Abubakar Muhammad Magami**  
-Email: magamiabu@gmail.com  
-Fellow ID: FE/23/75909764  
-Cohort 3 - 3MTT Knowledge Showcase
+#### This AI fit help you check scam links, give emotional support, help your business grow, and teach cybersecurity.
+Choose your mode, pick your language (Pidgin or English), and let's go!
 """)
+mode = st.selectbox("Choose your mode:", [
+    "Chatbox Mode",
+    "Scam/Email Checker",
+    "Emotional Advice",
+    "Business Help",
+    "Cybersecurity Tips"
+])
+language = st.radio("Choose your language:", ["English", "Pidgin"])
 
-# API info
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
-headers = {"Authorization": "Bearer YOUR_HUGGINGFACE_API_KEY"}
-
-# Helper function to query Hugging Face
-def query_huggingface(prompt):
+# --- Function to Query HuggingFace ---
+def ask_huggingface(prompt):
     try:
-        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-        return response.json()[0]['generated_text']
+        system_msg = "You are a helpful assistant that speaks {}. Respond to each query with a unique and informative answer. If the query is off-topic, gently inform the user you're not programmed for that.".format(language)
+        response = client.text_generation(
+            prompt=f"<s>[INST] <<SYS>>\n{system_msg}\n<</SYS>>\n{prompt} [/INST]",
+            max_new_tokens=300,
+            temperature=0.9,
+            top_p=0.95,
+            repetition_penalty=1.15
+        )
+        return response.strip()
     except Exception as e:
         return f"Wahala dey: {str(e)}"
 
-# Intelligent fallback for off-topic or confusing queries
-def handle_fallback(prompt):
-    fallback_keywords = [
-        "weather", "celebrity", "joke", "game", "sports", "who is", "what is", "movie", "song",
-        "define", "explain", "AI girlfriend", "crypto", "hack", "code", "how do I"
-    ]
-    polite_responses = [
-        "I no fit answer this one. Try ask me sometin wey concern business, cybersecurity or emotions.",
-        "This matter no dey my area. Ask me better question about feelings, scam, or biz tips.",
-        "Abeg rephrase your question. I sabi business, emotions, or cyber advice well well."
-    ]
-    if any(keyword in prompt.lower() for keyword in fallback_keywords):
-        return polite_responses[len(prompt) % len(polite_responses)]
-    return None
+# --- Chatbox Mode ---
+if mode == "Chatbox Mode":
+    st.subheader("Chat with AI")
+    user_input = st.text_area("Type your message:", height=200)
+    if st.button("Send") and user_input:
+        funny_replies = [
+            "Haha! That one burst my brain.",
+            "You sharp die!",
+            "No be lie, na so e be.",
+            "That one na cruise!",
+            "I go think am, but you sabi well!"
+        ]
+        prompt = f"User said: {user_input}. Respond like a funny, helpful AI in {language}."
+        answer = ask_huggingface(prompt)
+        if any(word in user_input.lower() for word in ["joke", "funny", "laugh"]):
+            answer += "\n\n" + random.choice(funny_replies)
+        st.session_state.chat_history.append((user_input, answer))
 
-# Mode selection
-mode = st.sidebar.selectbox("Select Mode", [
-    "Emotional Advice Chat",
-    "Business Helper",
-    "Cybersecurity Tips",
-    "Scam/Email Checker"
-])
-
-# Emotional Mode
-if mode == "Emotional Advice Chat":
-    st.subheader("Talk to your AI Buddy")
-    st.write("Feel free to share how you dey feel")
-    feelings = st.text_area("How you dey feel?")
-    if st.button("Send") and feelings:
-        emotion_tags = ["sad", "happy", "nervous", "excited", "angry", "scared", "confused", "depressed", "anxious", "I don't know"]
-        detected_emotion = next((tag for tag in emotion_tags if tag in feelings.lower()), "")
-        prompt = f"User say: '{feelings}'. Give emotional advice in Pidgin English. Emotion: {detected_emotion}"
-        fallback = handle_fallback(feelings)
-        result = fallback if fallback else query_huggingface(prompt)
-        st.info(result)
-
-# Business Mode
-elif mode == "Business Helper":
-    st.subheader("Na Business Matter")
-    biz_question = st.text_area("Tell me wetin concern your business")
-    if st.button("Send") and biz_question:
-        prompt = f"Person wan start or run business for Nigeria. E talk say: '{biz_question}'. Give helpful Pidgin advice with local examples and clear steps."
-        fallback = handle_fallback(biz_question)
-        result = fallback if fallback else query_huggingface(prompt)
-        st.success(result)
-
-# Cybersecurity Mode
-elif mode == "Cybersecurity Tips":
-    st.subheader("Cybersecurity Advice")
-    cyber_question = st.text_area("Wetin you wan know for cyber matter?")
-    if st.button("Send") and cyber_question:
-        prompt = f"User get question about cybersecurity. E say: '{cyber_question}'. Give practical Pidgin cyber tips for normal Nigerian business or student."
-        fallback = handle_fallback(cyber_question)
-        result = fallback if fallback else query_huggingface(prompt)
-        st.success(result)
-
-# Scam Detection Mode
+# --- Scam/Email Checker ---
 elif mode == "Scam/Email Checker":
     st.subheader("Scam Detector")
-    scam_input = st.text_area("Paste email or link wey you wan check:")
-    if st.button("Scan am!") and scam_input:
-        if validators.url(scam_input):
-            prompt = f"This link fit be scam? Link: {scam_input}. Explain why or why not in Pidgin."
+    user_input = st.text_area("Paste the email or link you want to check:", height=150)
+    if st.button("Scan") and user_input:
+        if validators.url(user_input):
+            prompt = f"Check if this link is scam: {user_input}. Explain in {language}."
         else:
-            prompt = f"This email or text fit be scam? Text: {scam_input}. Explain why or why not in Pidgin."
-        fallback = handle_fallback(scam_input)
-        result = fallback if fallback else query_huggingface(prompt)
-        st.warning(result)
+            prompt = f"Check if this email/text is scam: {user_input}. Explain in {language}."
+        answer = ask_huggingface(prompt)
+        st.session_state.chat_history.append((user_input, answer))
 
-# Note
-st.markdown("---")
-st.markdown("Magami AI powered by Hugging Face model - flan-t5-large")
-st.markdown("Na beginner friendly Python project for knowledge showcase.")
+# --- Emotional Advice ---
+elif mode == "Emotional Advice":
+    st.subheader("Talk to your AI Buddy")
+    feelings = st.text_area("How do you feel?", height=150)
+    if st.button("I need advice") and feelings:
+        sentiment = TextBlob(feelings).sentiment.polarity
+        if sentiment < -0.5:
+            tone = "very sad"
+        elif sentiment < 0:
+            tone = "a bit down"
+        elif sentiment > 0.5:
+            tone = "very happy"
+        else:
+            tone = "neutral"
+        prompt = f"User feels {tone}. Message: '{feelings}'. Give emotional advice in {language} for someone who feels {tone}."
+        answer = ask_huggingface(prompt)
+        st.session_state.chat_history.append((feelings, answer))
+
+# --- Business Help ---
+elif mode == "Business Help":
+    st.subheader("Business Growth Assistant")
+    biz_question = st.text_area("What's your business idea or challenge?", height=150)
+    if st.button("Give me business tips") and biz_question:
+        prompt = f"User asked: '{biz_question}'. Respond with clear Nigerian business strategies and advice in {language}. If unclear, ask for more info."
+        answer = ask_huggingface(prompt)
+        st.session_state.chat_history.append((biz_question, answer))
+
+# --- Cybersecurity Tips ---
+elif mode == "Cybersecurity Tips":
+    st.subheader("Cybersecurity Awareness")
+    cyber_question = st.text_area("Ask any cybersecurity question or concern:", height=150)
+    if st.button("Get cyber advice") and cyber_question:
+        prompt = f"User asked about cybersecurity: '{cyber_question}'. Provide detailed local cybersecurity awareness, practices and explanations in {language}."
+        answer = ask_huggingface(prompt)
+        st.session_state.chat_history.append((cyber_question, answer))
+
+# --- Display Chat History ---
+if st.session_state.chat_history:
+    st.markdown("---")
+    st.markdown("### Chat History")
+    for user_msg, ai_reply in reversed(st.session_state.chat_history):
+        st.markdown(f"**You:** {user_msg}")
+        st.markdown(f"**AI:** {ai_reply}")
