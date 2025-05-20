@@ -144,6 +144,9 @@ body {
 """, unsafe_allow_html=True)
 
 st.title("Prince Magami AI Assistant & Chatbox")
+st.markdown("3MTT FELLOW | COHORT 3 | KNOWLEDGE SHOWCASE")
+st.markdown("FE/23/75909764")
+st.markdown("magamiabu@gmail.com")
 st.markdown("By Abubakar Muhammad Magami")
 st.markdown("---")
 
@@ -161,6 +164,8 @@ st.info("""
 - Provide professional medical, legal, or financial advice
 - Answer unrelated or offensive questions (it will alert you)
 - Replace human experts or therapists
+
+Note: Stick strictly to the area of specialization of this A.I assistant
 """)
 
 # Language selector
