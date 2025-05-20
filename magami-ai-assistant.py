@@ -250,6 +250,9 @@ st.text_area("Type your message:", height=100, key="input_area")
 st.button("Send", on_click=process_input)
 
 # Display chat history
-for chat in 
-reversed(st.session_state.chat_history):
-    st.write(chat)
+for speaker, message in chat_history:
+    if speaker == "You":
+        st.markdown(f"**You:** {message}")
+    else:
+        st.markdown(f"**Magami AI:** {message}")
+        
