@@ -1,9 +1,11 @@
-import streamlit as st import openai from textblob import TextBlob import validators
+import streamlit as st
+import openai from textblob 
+import TextBlob 
+import validators
 
 CONFIG
 
-openai.api_key = "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"
-
+openai.api_key = st.secrets["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"]
 st.set_page_config(page_title="Magami AI Assistant & Chatbox", page_icon="🤖")
 
 PAGE TITLE
