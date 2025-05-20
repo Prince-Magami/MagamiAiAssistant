@@ -1,4 +1,4 @@
 streamlit
-openai
+huggingface_hub
 textblob
 validators
