@@ -20,15 +20,15 @@ if st.session_state.session_id not in st.session_state.chat_histories:
 chat_history = st.session_state.chat_histories[st.session_state.session_id]
 
 # Language options
-languages = ["Pidgin English", "English"]
+languages = ["English", "Pidgin English"]
 
 # Modes of the assistant
 modes = [
+    "General Chatbox",
     "Scam/Email Checker",
     "Emotional Advice Chat",
     "Business Helper",
-    "Cybersecurity Advisor",
-    "General Chatbox"
+    "Cybersecurity Advisor"
 ]
 
 # Fallback replies
