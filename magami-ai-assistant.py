@@ -5,7 +5,7 @@ import validators
 
 #CONFIG
 
-openai.api_key = st.secrets["openai"]["api_key"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 st.set_page_config(page_title="Magami AI Assistant & Chatbox", page_icon="🤖")
 
