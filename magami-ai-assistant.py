@@ -19,7 +19,7 @@ if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
 # --- Mode Selection ---
-st.title("Magami AI Assistant")
+st.title("Prince Magami AI Assistant")
 st.markdown("""
 #### This AI fit help you check scam links, give emotional support, help your business grow, and teach cybersecurity.
 Choose your mode, pick your language (Pidgin or English), and let's go!
