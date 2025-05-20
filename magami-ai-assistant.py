@@ -1,152 +1,116 @@
 import streamlit as st
-import openai
-from textblob import TextBlob
+import requests
 import validators
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-st.set_page_config(page_title="Prince Magami AI Assistant & Chatbox", page_icon="🤖")
-
-st.title("Prince Magami 👑 AI Assistant & Chatbox")
+# App title and config
+st.set_page_config(page_title="Magami AI Assistant & Chatbox")
+st.title("Magami AI Assistant & Chatbox")
 st.markdown("""
-By Abubakar Muhammad Magami | FellowID: FE/23/75909764 | Cohort 3 - 3MTT  
-**Magami AI Assistant and Chatbox**  
-Choose a mode and language to get started.
+**By Abubakar Muhammad Magami**  
+Email: magamiabu@gmail.com  
+Fellow ID: FE/23/75909764  
+Cohort 3 - 3MTT Knowledge Showcase
 """)
 
-#Language selection (Pidgin or English)
-lang = st.radio("Choose language:", ("Pidgin English", "English"))
+# API info
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+headers = {"Authorization": "Bearer YOUR_HUGGINGFACE_API_KEY"}
 
-def ask_openai(prompt):
-    """
-    Ask OpenAI GPT-3.5-turbo with updated syntax
-    """
+# Helper function to query Hugging Face
+def query_huggingface(prompt):
     try:
-        response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": f"You are a helpful assistant who speaks in {lang}."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
+        response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+        return response.json()[0]['generated_text']
     except Exception as e:
         return f"Wahala dey: {str(e)}"
 
-def detect_emotion(text):
-    """
-    Detect emotions with extended set for better advice
-    """
-    blob = TextBlob(text)
-    polarity = blob.sentiment.polarity
-    subjectivity = blob.sentiment.subjectivity
-    lowered = text.lower()
-    
-    # Check keywords for some specific emotions
-    if any(word in lowered for word in ["nervous", "anxious", "worried"]):
-        return "nervous"
-    elif any(word in lowered for word in ["scared", "fear", "frightened"]):
-        return "scared"
-    elif any(word in lowered for word in ["excited", "happy", "joy"]):
-        return "excited"
-    elif any(word in lowered for word in ["depressed", "sad", "unhappy", "down"]):
-        return "depressed"
-    elif any(word in lowered for word in ["don’t know", "i don't know", "confused", "unsure"]):
-        return "confused"
-    elif polarity > 0.4:
-        return "happy"
-    elif polarity < -0.4:
-        return "sad"
-    elif subjectivity > 0.6:
-        return "anxious"
-    else:
-        return "neutral"
+# Intelligent fallback for off-topic or confusing queries
+def handle_fallback(prompt):
+    fallback_keywords = [
+        "weather", "celebrity", "joke", "game", "sports", "who is", "what is", "movie", "song",
+        "define", "explain", "AI girlfriend", "crypto", "hack", "code", "how do I"
+    ]
+    polite_responses = [
+        "I no fit answer this one. Try ask me sometin wey concern business, cybersecurity or emotions.",
+        "This matter no dey my area. Ask me better question about feelings, scam, or biz tips.",
+        "Abeg rephrase your question. I sabi business, emotions, or cyber advice well well."
+    ]
+    if any(keyword in prompt.lower() for keyword in fallback_keywords):
+        return polite_responses[len(prompt) % len(polite_responses)]
+    return None
 
-def handle_out_of_scope():
-    """
-    Professional fallback answer for out-of-scope questions
-    """
-    if lang == "Pidgin English":
-        return ("Sorry, I no fit help you with dat kind matter. "
-                "I sabi only emotional support, small business advice, "
-                "and cyber security tips for Nigerians. "
-                "Abeg ask wetin relate to those areas.")
-    else:
-        return ("Sorry, I can't assist with that topic. "
-                "I specialize in emotional support, small business advice, "
-                "and cybersecurity awareness tailored for Nigerians. "
-                "Please ask something related to these areas.")
-
-# Mode selection with separate modes for Business and Cybersecurity
-mode = st.selectbox("Select mode:", [
-    "Scam/Email Checker",
-    "Emotional Advice ChatBox",
+# Mode selection
+mode = st.sidebar.selectbox("Select Mode", [
+    "Emotional Advice Chat",
     "Business Helper",
-    "Cybersecurity Tips"
+    "Cybersecurity Tips",
+    "Scam/Email Checker"
 ])
 
-# -- Scam/Email Checker Mode --
-if mode == "Scam/Email Checker":
-    st.subheader("Scam Detector")
-    user_input = st.text_area("Paste the email or link you want to check:", height=150)
-    if st.button("Scan am!") and user_input.strip():
-        if validators.url(user_input.strip()):
-            prompt = (f"Is this link a scam? Link: {user_input.strip()}. "
-                      f"Explain why in {lang}. "
-                      "If not scam, explain why it is safe.")
-        else:
-            prompt = (f"Is this email or text a scam? Text: {user_input.strip()}. "
-                      f"Explain why in {lang}. "
-                      "If not scam, explain why it is safe.")
-        result = ask_openai(prompt)
-        st.success(result)
-
-# -- Emotional Advice Chat Mode --
-elif mode == "Emotional Advice ChatBox":
+# Emotional Mode
+if mode == "Emotional Advice Chat":
     st.subheader("Talk to your AI Buddy")
-    feelings = st.text_area("How you dey feel? Talk true.", height=200)
-    if st.button("Send") and feelings.strip():
-        emotion = detect_emotion(feelings)
-        
-      
-        prompt = (
-            f"Person talk say: '{feelings.strip()}'. "
-            f"Detect emotion as '{emotion}'. "
-            f"Give {lang} emotional support advice considering these emotions: nervous, scared, excited, anxious, depressed, confused, happy, sad, neutral. "
-            "Add multiple advice and encouragements, make e warm and supportive. "
-            "If person dey confused or don't know, encourage patience and offer hope. "
-            "Answer kindly and professionally."
-        )
-        result = ask_openai(prompt)
+    st.write("Feel free to share how you dey feel")
+    feelings = st.text_area("How you dey feel?")
+    if st.button("Send") and feelings:
+        emotion_tags = ["sad", "happy", "nervous", "excited", "angry", "scared", "confused", "depressed", "anxious", "I don't know"]
+        detected_emotion = next((tag for tag in emotion_tags if tag in feelings.lower()), "")
+        prompt = f"User say: '{feelings}'. Give emotional advice in Pidgin English. Emotion: {detected_emotion}"
+        fallback = handle_fallback(feelings)
+        result = fallback if fallback else query_huggingface(prompt)
         st.info(result)
 
-# -- Business Helper Mode --
+# Business Mode
 elif mode == "Business Helper":
-    st.subheader("Small Business Helper")
-    business_input = st.text_area("Tell me your business idea, complaint, or question:", height=200)
-    if st.button("Send") and business_input.strip():
-        # AI asks for clarification if input is too vague
-        prompt = (
-            f"User talk say: '{business_input.strip()}'. "
-            f"Give {lang} concise advice and strategies for small Nigerian businesses. "
-            "If the business question or idea is unclear, ask the user one clarifying question politely. "
-            "Otherwise, give practical tips, advice, and business growth strategies. "
-            "Be culturally relevant and beginner friendly."
-        )
-        result = ask_openai(prompt)
+    st.subheader("Na Business Matter")
+    biz_question = st.text_area("Tell me wetin concern your business")
+    if st.button("Send") and biz_question:
+        prompt = f"Person wan start or run business for Nigeria. E talk say: '{biz_question}'. Give helpful Pidgin advice with local examples and clear steps."
+        fallback = handle_fallback(biz_question)
+        result = fallback if fallback else query_huggingface(prompt)
         st.success(result)
 
-# -- Cybersecurity tips --
+# Cybersecurity Mode
 elif mode == "Cybersecurity Tips":
-    st.subheader("Cybersecurity Awareness & Tips")
-    cyber_input = st.text_area("Ask about cybersecurity, risks, tips, or concerns:", height=200)
-    if st.button("Send") and cyber_input.strip():
-        prompt = (
-            f"User talk say: '{cyber_input.strip()}'. "
-            f"Provide {lang} local Nigerian cybersecurity awareness, practical tips, and education for small businesses and individuals. "
-            "Give detailed advice about protecting data, avoiding scams, and using safe online practices. "
-            "If the question is out of cybersecurity scope, respond professionally and guide the user to ask relevant questions."
-        )
-        result = ask_openai(prompt)
+    st.subheader("Cybersecurity Advice")
+    cyber_question = st.text_area("Wetin you wan know for cyber matter?")
+    if st.button("Send") and cyber_question:
+        prompt = f"User get question about cybersecurity. E say: '{cyber_question}'. Give practical Pidgin cyber tips for normal Nigerian business or student."
+        fallback = handle_fallback(cyber_question)
+        result = fallback if fallback else query_huggingface(prompt)
         st.success(result)
+
+# Scam Detection Mode
+elif mode == "Scam/Email Checker":
+    st.subheader("Scam Detector")
+    scam_input = st.text_area("Paste email or link wey you wan check:")
+    if st.button("Scan am!") and scam_input:
+        if validators.url(scam_input):
+            prompt = f"This link fit be scam? Link: {scam_input}. Explain why or why not in Pidgin."
+        else:
+            prompt = f"This email or text fit be scam? Text: {scam_input}. Explain why or why not in Pidgin."
+        fallback = handle_fallback(scam_input)
+        result = fallback if fallback else query_huggingface(prompt)
+        st.warning(result)
+
+# Note
+st.markdown("---")
+st.markdown("Magami AI powered by Hugging Face model - flan-t5-large")
+st.markdown("Na beginner friendly Python project for knowledge showcase.")
+
+
+Here’s your complete beginner-friendly Python code using Hugging Face (no OpenAI key required). It includes:
+
+Emotional advice (expanded emotions)
+
+Separate modes for Business and Cybersecurity
+
+Fallback handling for off-topic questions
+
+Unlimited text input with a Send button
+
+Responses in Pidgin
+
+
+You can now copy, paste, and run it in Streamlit. Let me know if you want enhancements like saving chat history or adding user sessions.
+
