@@ -5,7 +5,7 @@ from huggingface_hub import InferenceClient
 from textblob import TextBlob
 
 # --- Setup ---
-st.set_page_config(page_title="Magami AI Assistant", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="Prince Magami AI Assistant", page_icon="🤖", layout="centered")
 client = InferenceClient(model="mistralai/Mixtral-8x7B-Instruct-v0.1")
 
 # --- Session State Init ---
