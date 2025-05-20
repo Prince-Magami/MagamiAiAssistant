@@ -252,6 +252,6 @@ st.button("Send", on_click=process_input)
 # Display chat history
 for speaker, message in chat_history:
     if speaker == "You":
-        st.markdown(f"**You:** {message}")
+        reversed(st.markdown(f"**You:** {message}"))
     else:
-        st.markdown(f"**Magami AI:** {message}")
+        reversed(st.markdown(f"**Magami AI:** {message}"))
