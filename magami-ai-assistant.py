@@ -143,7 +143,7 @@ body {
 </style>  
 """, unsafe_allow_html=True)
 
-st.title("Magami AI Assistant & Chatbox")
+st.title("Prince Magami AI Assistant & Chatbox")
 st.markdown("By Abubakar Muhammad Magami")
 st.markdown("---")
 
