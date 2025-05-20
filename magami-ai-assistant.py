@@ -8,7 +8,7 @@ from textblob import TextBlob
 api_key = st.secrets["huggingface"]["api_key"]
 
 # Initialize the Hugging Face client
-client = InferenceClient(token=api_key)
+client = InferenceClient(api_key=api_key)
 
 # --- Setup ---
 st.set_page_config(page_title="Prince Magami AI Assistant", page_icon="🤖", layout="centered")
