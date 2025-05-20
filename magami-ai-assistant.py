@@ -14,7 +14,7 @@ By Abubakar Muhammad Magami | FellowID: FE/23/75909764 | Cohort 3 - 3MTT
 Choose a mode and language to get started.
 """)
 
-Language selection (Pidgin or English)
+#Language selection (Pidgin or English)
 lang = st.radio("Choose language:", ("Pidgin English", "English"))
 
 def ask_openai(prompt):
