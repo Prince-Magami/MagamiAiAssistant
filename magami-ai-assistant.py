@@ -101,7 +101,7 @@ cybersecurity_tips = [
 def get_cohere_response(prompt):
     try:
         response = co.generate(
-            model="xlarge",
+            model="command-r-plus",
             prompt=prompt,
             max_tokens=250,
             temperature=0.75,
