@@ -245,10 +245,6 @@ def process_input():
         # Clear input by resetting the session state
         st.session_state.input_area = ""
 
-# User input area with callback
-st.text_area("Type your message:", height=100, key="input_area")
-st.button("Send", on_click=process_input)
-
 # Display chat history
 for speaker, message in chat_history:
     if speaker == "You":
@@ -256,3 +252,6 @@ for speaker, message in chat_history:
     else:
         st.markdown(f"**Magami AI:** {message}")
         
+# User input area with callback
+st.text_area("Type your message:", height=100, key="input_area")
+st.button("Send", on_click=process_input)
