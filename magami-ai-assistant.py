@@ -21,7 +21,7 @@ if 'chat_history' not in st.session_state:
 # --- Mode Selection ---
 st.title("Prince Magami AI Assistant")
 st.markdown("""
-#### This AI fit help you check scam links, give emotional support, help your business grow, and teach cybersecurity.
+#### This AI fit help you check scam links, give emotional support, help your business grow, teach cybersecurity and even Chatbox. 
 Choose your mode, pick your language (Pidgin or English), and let's go!
 """)
 mode = st.selectbox("Choose your mode:", [
