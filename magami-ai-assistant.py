@@ -3,28 +3,24 @@ from cohere import Client
 from random import choice
 import uuid
 
-# Cohere API Key
+# --- Cohere API Key ---
 cohere_api_key = st.secrets["cohere_api_key"]
 co = Client(cohere_api_key)
 
-# Session state initialization for multiple user sessions and chat histories
+# --- Session State Initialization ---
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
-# Initialize chat history scoped to session ID
 if "chat_histories" not in st.session_state:
     st.session_state.chat_histories = {}
 
 if st.session_state.session_id not in st.session_state.chat_histories:
     st.session_state.chat_histories[st.session_state.session_id] = []
 
-# Shortcut for easier access
 chat_history = st.session_state.chat_histories[st.session_state.session_id]
 
-# Language options
+# --- Options ---
 languages = ["Pidgin English", "English"]
-
-# Modes of the assistant
 modes = [
     "Scam/Email Checker",
     "Emotional Advice Chat",
@@ -33,7 +29,7 @@ modes = [
     "General Chatbox"
 ]
 
-# Large library of fallback replies for off-topic or unknown questions
+# --- Fallback Replies ---
 fallback_replies = [
     "Sorry o, I no sabi that one well well. Try ask me something wey relate.",
     "Hmm, I no get answer to that matter. Abeg try ask wetin relate.",
@@ -42,7 +38,7 @@ fallback_replies = [
     "I no fit answer dat one now. Try ask me question about business, cyber, or emotions."
 ]
 
-# Expanded emotional categories & sample diverse replies
+# --- Emotional Replies ---
 emotion_responses = {
     "happy": [
         "You dey shine! Keep the good vibes rolling.",
@@ -81,7 +77,7 @@ emotion_responses = {
     ]
 }
 
-# Business tips samples
+# --- Business & Cyber Tips ---
 business_tips = [
     "Know your customer well, e important for business success.",
     "Always dey plan ahead and manage your money carefully.",
@@ -90,7 +86,6 @@ business_tips = [
     "Customer service fit make or break your business."
 ]
 
-# Cybersecurity tips samples
 cybersecurity_tips = [
     "Never share your passwords with anybody.",
     "Always update your software to avoid hackers.",
@@ -99,7 +94,7 @@ cybersecurity_tips = [
     "Backup your important files regularly."
 ]
 
-# Function to generate AI response via Cohere generate endpoint
+# --- AI Response Generator ---
 def get_cohere_response(prompt):
     try:
         response = co.generate(
@@ -115,146 +110,94 @@ def get_cohere_response(prompt):
     except Exception as e:
         return f"Wahala dey: {str(e)}"
 
-# Function to get a fallback response randomly
+# --- Fallback ---
 def get_fallback_response():
     return choice(fallback_replies)
 
-# UI layout and logic
-st.set_page_config(page_title="Prince Magami AI Assistant", page_icon="🤖", layout="centered")
+# --- Streamlit UI ---
+st.set_page_config(page_title="Magami AI Assistant", page_icon="🤖", layout="centered")
 
 st.markdown("""
-<style>  
-body {  
-    background-color: #f5f5f7;  
-    color: #333;  
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  
-}  
-.stButton>button {  
-    background-color: #0072C6;  
-    color: white;  
-    border-radius: 8px;  
-    padding: 8px 16px;  
-}  
-.stButton>button:hover {  
-    background-color: #005A9E;  
-}  
-.stTextArea textarea, .stTextInput input {  
-    border-radius: 8px;  
-    padding: 10px;  
-}  
-</style>  
+<style>
+body {
+    background-color: #f5f5f7;
+    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.stButton>button {
+    background-color: #0072C6;
+    color: white;
+    border-radius: 8px;
+    padding: 8px 16px;
+}
+.stButton>button:hover {
+    background-color: #005A9E;
+}
+.stTextArea textarea, .stTextInput input {
+    border-radius: 8px;
+    padding: 10px;
+}
+</style>
 """, unsafe_allow_html=True)
 
-st.title("Prince Magami AI Assistant & Chatbox")
-st.markdown("By Abubakar Muhammad Magami")
-st.markdown("FE/23/75909764")
-st.markdown("3MTT | KNOWLEDGE SHOWCASE")
-st.markdown("magamiabu@gmail.com")
+st.title("Magami AI Assistant & Chatbox")
+st.markdown("**By Abubakar Muhammad Magami**")
 st.markdown("---")
 
 st.info("""
-What this AI can do:
+### What this AI can do:
+- Detect scams in emails and links  
+- Give emotional support & advice in Pidgin or English  
+- Offer business ideas & strategies for Nigerian small businesses  
+- Provide cyber security awareness & tips  
+- Fun general chat
 
-Detect scams in emails and links
-
-Give emotional support & advice in Pidgin or English
-
-Offer tailored business ideas & strategies for Nigerian small businesses
-
-Provide cyber security awareness & tips
-
-General chat with fun and serious replies
-
-What it cannot do:
-
-Provide professional medical, legal, or financial advice
-
-Answer unrelated or offensive questions (it will alert you)
-
-Replace human experts or therapists
+**Note:**  
+It cannot give medical/legal/financial advice or replace real experts.
 """)
 
-# Language selector
-lang = st.selectbox("Choose language: ", languages)
+lang = st.selectbox("Choose language:", languages)
+mode = st.selectbox("Choose mode:", modes)
 
-# Mode selector
-mode = st.selectbox("Choose modes: ", modes)
-
-# User input area
 user_input = st.text_area("Type your message:", height=100, key="input_area")
 send = st.button("Send")
 
 if send and user_input.strip() != "":
-    prompt = ""
     user_text = user_input.strip()
+    prompt = ""
 
     if mode == "Scam/Email Checker":
-        if lang == "Pidgin English":
-            prompt = f"You be scam detector. Check if this is scam: '{user_text}'. Explain in Pidgin."
-        else:
-            prompt = f"You are a scam detector. Check if this is a scam: '{user_text}'. Explain in clear English."
+        prompt = f"You be scam detector. Check if this is scam: '{user_text}'. Explain in {'Pidgin' if lang == 'Pidgin English' else 'English'}."
 
     elif mode == "Emotional Advice Chat":
-        lowered = user_text.lower()
-        emotion_key = None
-        for emo in emotion_responses:
-            if emo in lowered:
-                emotion_key = emo
-                break
-        if not emotion_key:
-            emotion_key = "idk"
-
-        response_list = emotion_responses.get(emotion_key, emotion_responses["idk"])
-        random_reply = choice(response_list)
-
-        if lang == "Pidgin English":
-            prompt = f"You be emotional support AI wey dey talk Pidgin. Person talk say: '{user_text}'. Advice am well. Also add this reply: '{random_reply}'."
-        else:
-            prompt = f"You are an emotional support AI. Person says: '{user_text}'. Give thoughtful advice in English. Also add this reply: '{random_reply}'."
+        emotion_key = next((e for e in emotion_responses if e in user_text.lower()), "idk")
+        random_reply = choice(emotion_responses[emotion_key])
+        prompt = f"You be emotional support AI. User talk: '{user_text}'. Advice in {lang}. Add this: '{random_reply}'."
 
     elif mode == "Business Helper":
-        if lang == "Pidgin English":
-            prompt = f"You be business advisor for small Nigerian business. User talk say: '{user_text}'. Give Pidgin business ideas, strategies, and advice."
-        else:
-            prompt = f"You are a business advisor for small Nigerian businesses. User says: '{user_text}'. Give clear English business strategies and advice."
+        prompt = f"You be business advisor. User talk: '{user_text}'. Give {lang} strategies for small Nigerian business."
 
     elif mode == "Cybersecurity Advisor":
-        if lang == "Pidgin English":
-            prompt = f"You be cybersecurity expert wey sabi advise Nigerians. User ask: '{user_text}'. Give Pidgin cybersecurity tips and awareness."
-        else:
-            prompt = f"You are a cybersecurity expert advising Nigerians. User says: '{user_text}'. Give cybersecurity tips and awareness in English."
+        prompt = f"You be cyber security expert. User talk: '{user_text}'. Give {lang} tips and awareness."
 
     elif mode == "General Chatbox":
-        funny_replies = [
+        funny_line = choice([
             "You dey funny o!",
             "Chai, you get sense well!",
             "I dey hear you, make we yarn more.",
             "No wahala, I dey here gidigba for you.",
             "Your own sabi, I go try follow you waka."
-        ]
-        random_funny = choice(funny_replies)
-        if lang == "Pidgin English":
-            prompt = f"You be friendly chat AI wey sabi Pidgin. User talk: '{user_text}'. Reply well, add dis funny line: '{random_funny}'."
-        else:
-            prompt = f"You are a friendly chatbot. User says: '{user_text}'. Reply kindly in English. Add this funny line: '{random_funny}'."
+        ])
+        prompt = f"You be friendly chat AI. User talk: '{user_text}'. Reply in {lang}. Add this line: '{funny_line}'."
 
-    if prompt:
-        ai_response = get_cohere_response(prompt)
+    ai_response = get_cohere_response(prompt)
+    if len(ai_response) < 10 or "error" in ai_response.lower():
+        ai_response = get_fallback_response()
 
-        if len(ai_response) < 10 or "error" in ai_response.lower():
-            ai_response = get_fallback_response()
+    chat_history.append(("You", user_text))
+    chat_history.append(("Magami AI", ai_response))
+    st.session_state.input_area = ""
 
-        # Append to session-specific chat history
-        chat_history.append(("You", user_text))
-        chat_history.append(("Magami AI", ai_response))
-
-        # Clear input
-        st.session_state.input_area = ""
-
-# Display chat history
+# --- Display Chat History ---
 for speaker, message in chat_history:
-    if speaker == "You":
-        st.markdown(f"**You:** {message}")
-    else:
-        st.markdown(f"**Magami AI:** {message}")
-            
+    st.markdown(f"**{speaker}**: {message}")
