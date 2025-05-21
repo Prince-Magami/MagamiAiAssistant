@@ -24,7 +24,7 @@ languages = ["English", "Pidgin English"]
 
 # Modes of the assistant
 modes = [
-    "General Chatbox",
+    "Chatbox",
     "Scam/Email Checker",
     "Emotional Advice Chat",
     "Business Helper",
@@ -218,7 +218,7 @@ def process_input():
         else:
             prompt = f"You are a cybersecurity expert advising Nigerians. User says: '{user_text}'. Give cybersecurity tips and awareness in English."
 
-    elif mode == "General Chatbox":
+    elif mode == "Chatbox":
         funny_replies = [
             "You dey funny o!",
             "Chai, you get sense well!",
