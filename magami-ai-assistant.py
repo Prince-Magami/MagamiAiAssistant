@@ -2,14 +2,27 @@ import streamlit as st
 from cohere import Client
 from random import choice
 import uuid
+import sqlite3
+import datetime
+import requests
+import json
+import pyttsx3
+import speech_recognition as sr
+from streamlit_option_menu import option_menu
 
-# Cohere API Key
-cohere_api_key = st.secrets["cohere_api_key"]
-co = Client(cohere_api_key)
+# ========================== DATABASE SETUP ==========================
+conn = sqlite3.connect("pmai_users.db", check_same_thread=False)
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT, email TEXT, password TEXT)''')
+c.execute('''CREATE TABLE IF NOT EXISTS messages (user_id TEXT, mode TEXT, message TEXT, response TEXT, timestamp TEXT, rating TEXT)''')
+conn.commit()
 
-# Session state initialization
+# ========================== SESSION STATE ==========================
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
+
+if "user" not in st.session_state:
+    st.session_state.user = None
 
 if "chat_histories" not in st.session_state:
     st.session_state.chat_histories = {}
@@ -19,239 +32,186 @@ if st.session_state.session_id not in st.session_state.chat_histories:
 
 chat_history = st.session_state.chat_histories[st.session_state.session_id]
 
-# Language options
-languages = ["English", "Pidgin English"]
+# ========================== API & ENGINE ===========================
+cohere_api_key = st.secrets["cohere_api_key"]
+co = Client(cohere_api_key)
+engine = pyttsx3.init()
 
-# Modes of the assistant
-modes = [
-    "Chatbox",
-    "Scam/Email Checker",
-    "Emotional Advice Chat",
-    "Business Helper",
-    "Cybersecurity Advisor"
-]
+# ========================== APP CONFIGURATION =============================
+st.set_page_config(page_title="PMAI - Prince Magami AI Assistant", page_icon="🤖", layout="wide")
 
-# Fallback replies
-fallback_replies = [
-    "Sorry o, I no sabi that one well well. Try ask me something wey relate.",
-    "Hmm, I no get answer to that matter. Abeg try ask wetin relate.",
-    "Omo, dat one pass my hand. Make we yarn about something else.",
-    "Wahala dey to understand dat one. Abeg make we focus on the correct topic.",
-    "I no fit answer dat one now. Try ask me question about business, cyber, or emotions."
-]
+with st.sidebar:
+    selected = option_menu("PMAI Menu", ["Home", "Login", "Register", "Admin Panel", "Analytics"],
+        icons=['house', 'box-arrow-in-right', 'person-plus', 'shield-lock', 'bar-chart'],
+        menu_icon="robot", default_index=0)
 
-# Emotional responses
-emotion_responses = {
-    "happy": [
-        "You dey shine! Keep the good vibes rolling.",
-        "That joy dey sweet like sugar, no let am go.",
-        "Happy days ahead, my guy!"
-    ],
-    "nervous": [
-        "No worry, e normal to feel nervous sometimes.",
-        "Take deep breaths, you go better.",
-        "Calm down, everything go smooth."
-    ],
-    "scared": [
-        "No fear, better days dey come.",
-        "I dey here for you, no be only you.",
-        "Face am small small, you fit handle am."
-    ],
-    "excited": [
-        "Wetin dey burst your brain? Good excitement be dat!",
-        "Make you enjoy am well well!",
-        "Excitement na better thing, channel am well."
-    ],
-    "anxious": [
-        "I understand your feelings, try relax small.",
-        "Everything go dey alright, one step at a time.",
-        "Focus on the positive things."
-    ],
-    "depressed": [
-        "I dey with you. No be the end, better days dey.",
-        "Try talk to someone close or a pro.",
-        "Small small, things go improve."
-    ],
-    "idk": [
-        "No wahala if you no know, we dey learn together.",
-        "Try put mouth for wetin dey happen around you.",
-        "Ask more questions, you go sabi soon."
-    ]
+# ========================== LOGO AND STYLES ========================
+st.markdown("""
+<style>
+.logo-container {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
+.logo-text {
+    font-size: 36px;
+    font-weight: bold;
+    color: #0072C6;
+}
+.response-block {
+    background-color: #f0f8ff;
+    border-left: 5px solid #0072C6;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+</style>
+<div class='logo-container'>
+    <div class='logo-text'>🤖 PMAI - Prince Magami AI Assistant</div>
+</div>
+""", unsafe_allow_html=True)
 
-# Business tips
-business_tips = [
-    "Know your customer well, e important for business success.",
-    "Always dey plan ahead and manage your money carefully.",
-    "Use social media to promote your business for free.",
-    "Try small small product testing before full launch.",
-    "Customer service fit make or break your business."
-]
-
-# Cybersecurity tips
-cybersecurity_tips = [
-    "Never share your passwords with anybody.",
-    "Always update your software to avoid hackers.",
-    "Use strong passwords with letters, numbers and symbols.",
-    "Beware of phishing emails, no click suspicious links.",
-    "Backup your important files regularly."
-]
-
-# Function to generate AI response
-def get_cohere_response(prompt):
+# ========================== UTILITIES ==============================
+def get_response(prompt):
     try:
         response = co.generate(
             model="command-r-plus",
             prompt=prompt,
             max_tokens=250,
-            temperature=0.75,
+            temperature=0.7,
             k=0,
             stop_sequences=["--"],
             return_likelihoods="NONE"
         )
         return response.generations[0].text.strip()
     except Exception as e:
-        return f"Wahala dey: {str(e)}"
+        return f"Error: {str(e)}"
 
-# Function to get a fallback response
-def get_fallback_response():
-    return choice(fallback_replies)
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
-# UI layout and logic
-st.set_page_config(page_title="Magami AI Assistant", page_icon="🤖", layout="centered")
+def scam_checker_api(text):
+    try:
+        return "[LIVE SCAM SCAN PLACEHOLDER] This input looks clean."  # Replace with real API
+    except:
+        return "Could not connect to scam checker."
 
-st.markdown("""
-<style>  
-body {  
-    background-color: #f5f5f7;  
-    color: #333;  
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  
-}  
-.stButton>button {  
-    background-color: #0072C6;  
-    color: white;  
-    border-radius: 8px;  
-    padding: 8px 16px;  
-}  
-.stButton>button:hover {  
-    background-color: #005A9E;  
-}  
-.stTextArea textarea, .stTextInput input {  
-    border-radius: 8px;  
-    padding: 10px;  
-}  
-</style>  
-""", unsafe_allow_html=True)
+def save_message(user_id, mode, message, response, rating=None):
+    timestamp = str(datetime.datetime.now())
+    c.execute("INSERT INTO messages (user_id, mode, message, response, timestamp, rating) VALUES (?, ?, ?, ?, ?, ?)",
+              (user_id, mode, message, response, timestamp, rating))
+    conn.commit()
 
-st.title("Prince Magami AI Assistant & Chatbox")
-st.markdown("3MTT FELLOW | COHORT 3 | KNOWLEDGE SHOWCASE")
-st.markdown("FE/23/75909764")
-st.markdown("magamiabu@gmail.com")
-st.markdown("By Abubakar Muhammad Magami")
-st.markdown("---")
+def record_audio():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.info("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            return recognizer.recognize_google(audio)
+        except:
+            return "Voice not recognized."
 
-st.info("""
-**What this AI can do:**
+# ========================== AUTH SYSTEM ============================
+def register():
+    st.subheader("Create New Account")
+    username = st.text_input("Username")
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
+    if st.button("Register"):
+        user_id = str(uuid.uuid4())
+        c.execute("INSERT INTO users (id, username, email, password) VALUES (?, ?, ?, ?)",
+                  (user_id, username, email, password))
+        conn.commit()
+        st.success("Registered successfully! Please login.")
 
-- Detect scams in emails and links
-- Give emotional support & advice in Pidgin or English
-- Offer tailored business ideas & strategies for Nigerian small businesses
-- Provide cyber security awareness & tips
-- General chat with fun and serious replies
-
-**What it cannot do:**
-
-- Provide professional medical, legal, or financial advice
-- Answer unrelated or offensive questions (it will alert you)
-- Replace human experts or therapists
-
-Note: Stick strictly to the area of specialization of this A.I assistant
-""")
-
-# Language selector
-lang = st.selectbox("Choose language: ", languages)
-
-# Mode selector
-mode = st.selectbox("Choose modes: ", modes)
-
-# Callback function to process input
-def process_input():
-    user_text = st.session_state.input_area.strip()
-    if user_text == "":
-        return
-
-    prompt = ""
-
-    if mode == "Scam/Email Checker":
-        if lang == "Pidgin English":
-            prompt = f"You be scam detector. Check if this is scam: '{user_text}'. Explain in Pidgin."
+def login():
+    st.subheader("Login")
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
+        user = c.fetchone()
+        if user:
+            st.session_state.user = user
+            st.success(f"Welcome back, {user[1]}!")
         else:
-            prompt = f"You are a scam detector. Check if this is a scam: '{user_text}'. Explain in clear English."
+            st.error("Invalid credentials.")
 
-    elif mode == "Emotional Advice Chat":
-        lowered = user_text.lower()
-        emotion_key = None
-        for emo in emotion_responses:
-            if emo in lowered:
-                emotion_key = emo
-                break
-        if not emotion_key:
-            emotion_key = "idk"
+# ========================== MAIN CHAT HOME =========================
+def main_app():
+    st.subheader("Talk to PMAI")
 
-        response_list = emotion_responses.get(emotion_key, emotion_responses["idk"])
-        random_reply = choice(response_list)
+    languages = ["English", "Pidgin English"]
+    modes = ["Chatbox", "Scam/Email Checker", "Exam/Academic Assistant", "Business Helper", "Cybersecurity Advisor"]
 
-        if lang == "Pidgin English":
-            prompt = f"You be emotional support AI wey dey talk Pidgin. Person talk say: '{user_text}'. Advice am well. Also add this reply: '{random_reply}'."
-        else:
-            prompt = f"You are an emotional support AI. Person says: '{user_text}'. Give thoughtful advice in English. Also add this reply: '{random_reply}'."
+    lang = st.selectbox("Language", languages, index=0)
+    mode = st.selectbox("Assistant Mode", modes)
+    audio_btn = st.button("🎤 Speak Instead")
 
-    elif mode == "Business Helper":
-        if lang == "Pidgin English":
-            prompt = f"You be business advisor for small Nigerian business. User talk say: '{user_text}'. Give Pidgin business ideas, strategies, and advice."
-        else:
-            prompt = f"You are a business advisor for small Nigerian businesses. User says: '{user_text}'. Give clear English business strategies and advice."
-
-    elif mode == "Cybersecurity Advisor":
-        if lang == "Pidgin English":
-            prompt = f"You be cybersecurity expert wey sabi advise Nigerians. User ask: '{user_text}'. Give Pidgin cybersecurity tips and awareness."
-        else:
-            prompt = f"You are a cybersecurity expert advising Nigerians. User says: '{user_text}'. Give cybersecurity tips and awareness in English."
-
-    elif mode == "Chatbox":
-        funny_replies = [
-            "You dey funny o!",
-            "Chai, you get sense well!",
-            "I dey hear you, make we yarn more.",
-            "No wahala, I dey here gidigba for you.",
-            "Your own sabi, I go try follow you waka."
-        ]
-        random_funny = choice(funny_replies)
-        if lang == "Pidgin English":
-            prompt = f"You be friendly chat AI wey sabi Pidgin. User talk: '{user_text}'. Reply well, add dis funny line: '{random_funny}'."
-        else:
-            prompt = f"You are a friendly chatbot. User says: '{user_text}'. Reply kindly in English. Add this funny line: '{random_funny}'."
-
-    if prompt:
-        ai_response = get_cohere_response(prompt)
-
-        if len(ai_response) < 10 or "error" in ai_response.lower():
-            ai_response = get_fallback_response()
-
-        # Append to session-specific chat history
-        chat_history.append(("You", user_text))
-        chat_history.append(("Magami AI", ai_response))
-
-        # Clear input by resetting the session state
-        st.session_state.input_area = ""
-
-# Display chat history
-for speaker, message in chat_history:
-    if speaker == "You":
-        st.markdown(f"**You:** {message}")
+    if audio_btn:
+        user_input = record_audio()
     else:
-        st.markdown(f"**Magami AI:** {message}")
-        
-# User input area with callback
-st.text_area("Type your message:", height=100, key="input_area")
-st.button("Send", on_click=process_input)
+        user_input = st.text_area("Type your message (Press Enter to send):", key="input_area")
+
+    if user_input and st.session_state.user:
+        if mode == "Scam/Email Checker":
+            reply = scam_checker_api(user_input)
+        elif mode == "Exam/Academic Assistant":
+            prompt = f"You are an academic assistant for students in Nigeria (secondary and university level). Student asks: '{user_input}'. Reply with a helpful, intelligent answer."
+            reply = get_response(prompt)
+        elif mode == "Business Helper":
+            prompt = f"You are a Nigerian business advisor. User says: '{user_input}'. Provide smart, practical strategies."
+            reply = get_response(prompt)
+        elif mode == "Cybersecurity Advisor":
+            prompt = f"You are a cybersecurity expert for Nigerian users. They say: '{user_input}'. Provide tips or guidance."
+            reply = get_response(prompt)
+        elif mode == "Chatbox":
+            prompt = f"You are a witty and smart AI chatbot. Chat with the user naturally. They said: '{user_input}'."
+            reply = get_response(prompt)
+        else:
+            reply = "Unknown mode."
+
+        speak(reply)
+        st.markdown(f"<div class='response-block'><b>PMAI:</b> {reply}</div>", unsafe_allow_html=True)
+
+        rating = st.radio("Was this helpful?", ["👍🏽 Yes", "👎🏽 No"], horizontal=True)
+        save_message(st.session_state.user[0], mode, user_input, reply, rating)
+
+# ========================== ADMIN PANEL ============================
+def admin_panel():
+    st.subheader("Admin Panel - Prince Magami")
+    c.execute("SELECT COUNT(*) FROM users")
+    total_users = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM messages")
+    total_msgs = c.fetchone()[0]
+    st.metric("Total Registered Users", total_users)
+    st.metric("Total Messages Exchanged", total_msgs)
+
+    with st.expander("View All Messages"):
+        c.execute("SELECT * FROM messages ORDER BY timestamp DESC LIMIT 50")
+        data = c.fetchall()
+        for row in data:
+            st.markdown(f"**Mode:** {row[1]} | **Input:** {row[2]} | **Response:** {row[3]} | **Rating:** {row[5]} | {row[4]}")
+
+# ========================== ANALYTICS ==============================
+def analytics():
+    st.subheader("Usage Analytics")
+    c.execute("SELECT mode, COUNT(*) FROM messages GROUP BY mode")
+    data = c.fetchall()
+    st.bar_chart({mode: count for mode, count in data})
+
+# ========================== ROUTER ================================
+if selected == "Home" and st.session_state.user:
+    main_app()
+elif selected == "Login":
+    login()
+elif selected == "Register":
+    register()
+elif selected == "Admin Panel" and st.session_state.user and st.session_state.user[1] == "Magami":
+    admin_panel()
+elif selected == "Analytics" and st.session_state.user:
+    analytics()
+else:
+    st.warning("Please login to access this section.")
