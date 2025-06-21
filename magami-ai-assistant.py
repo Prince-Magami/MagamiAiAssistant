@@ -6,10 +6,7 @@ import sqlite3
 import datetime
 import requests
 import json
-try:
-    import speech_recognition as sr
-except:
-    sr = None
+import speech_recognition as sr
 from streamlit_option_menu import option_menu
 import streamlit.components.v1 as components
 
@@ -45,36 +42,44 @@ chat_history = st.session_state.chat_histories[st.session_state.session_id]
 st.markdown("""
     <style>
     :root {
-        --bg-color: #ffffff;
-        --text-color: #000000;
-        --response-bg: #000000;
-        --response-text: #ffffff;
-    }
-    .dark-theme :root {
-        --bg-color: #0e1117;
-        --text-color: #ffffff;
-        --response-bg: #ffffff;
-        --response-text: #000000;
+        --bg-color-light: #ffffff;
+        --bg-color-dark: #0e1117;
+        --text-color-light: #000000;
+        --text-color-dark: #ffffff;
+        --response-bg-light: #e0e0e0;
+        --response-bg-dark: #333333;
     }
     body, .stApp {
-        background-color: var(--bg-color);
-        color: var(--text-color);
+        background-color: var(--bg-color-light);
+        color: var(--text-color-light);
+    }
+    .dark-theme body, .dark-theme .stApp {
+        background-color: var(--bg-color-dark);
+        color: var(--text-color-dark);
     }
     .response-block {
-        background-color: var(--response-bg);
-        color: var(--response-text);
+        background-color: var(--response-bg-light);
+        color: var(--text-color-light);
         border-left: 5px solid #0072C6;
         padding: 15px;
         margin-top: 10px;
         margin-bottom: 10px;
         border-radius: 10px;
         font-size: 16px;
-        word-wrap: break-word;
     }
-    .stButton > button {
-        font-size: 18px;
-        padding: 10px;
-        width: 100%;
+    .dark-theme .response-block {
+        background-color: var(--response-bg-dark);
+        color: var(--text-color-dark);
+    }
+    .custom-box {
+        background: rgba(255,255,255,0.8);
+        border-radius: 10px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .dark-theme .custom-box {
+        background: rgba(0,0,0,0.8);
+        color: white;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -140,8 +145,6 @@ def save_message(user_id, mode, message, response):
     conn.commit()
 
 def record_audio():
-    if not sr:
-        return "Speech not supported in this environment."
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         st.info("Listening...")
@@ -153,7 +156,8 @@ def record_audio():
 
 # ========================== AUTH ==============================
 def register():
-    st.subheader("Create New Account")
+    st.markdown("""<div class='custom-box'>""", unsafe_allow_html=True)
+    st.subheader("Create Your Account")
     username = st.text_input("Username")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
@@ -164,9 +168,11 @@ def register():
         conn.commit()
         st.success("Registered successfully! Please login.")
         st.markdown("Already have an account? Click the sidebar and go to Login.")
+    st.markdown("""</div>""", unsafe_allow_html=True)
 
 def login():
-    st.subheader("Login")
+    st.markdown("""<div class='custom-box'>""", unsafe_allow_html=True)
+    st.subheader("Login to PMAI")
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
@@ -177,6 +183,7 @@ def login():
             st.success(f"Welcome back, {user[1]}!")
         else:
             st.error("Invalid credentials.")
+    st.markdown("""</div>""", unsafe_allow_html=True)
 
 def logout():
     st.session_state.user = None
