@@ -1,9 +1,7 @@
 streamlit
 cohere
-speechrecognition
 streamlit-option-menu
+SpeechRecognition
 requests
-pandas
-matplotlib
-plotly
-python-dotenv
+uuid
+pyaudio
