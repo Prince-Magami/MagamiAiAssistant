@@ -93,9 +93,22 @@ def speak(text):
 
 def scam_checker_api(text):
     try:
-        return "[LIVE SCAM SCAN PLACEHOLDER] This input looks clean."  # Replace with real API
-    except:
-        return "Could not connect to scam checker."
+        import urllib.parse
+        base_url = "https://ipqualityscore.com/api/json/url/"
+        api_key = st.secrets["ipqs_api_key"] 
+        encoded_url = urllib.parse.quote(text.strip())
+        query_url = f"{base_url}{api_key}/{encoded_url}"
+
+        response = requests.get(query_url)
+        result = response.json()
+
+        if result.get("unsafe"):
+            return f"⚠️ Warning: This link is flagged as unsafe. Reason: {result.get('suspicious', 'Potentially harmful')}"
+        else:
+            return "✅ This link appears safe based on real-time scan."
+    except Exception as e:
+        return f"Error checking link: {str(e)}"
+
 
 def save_message(user_id, mode, message, response, rating=None):
     timestamp = str(datetime.datetime.now())
