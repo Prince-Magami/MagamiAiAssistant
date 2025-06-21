@@ -215,3 +215,8 @@ elif selected == "Analytics" and st.session_state.user:
     analytics()
 else:
     st.warning("Please login to access this section.")
+
+# ========================== FOOTER INFO ==========================
+st.markdown("---")
+st.markdown("**Developed by:** || Abubakar Muhammad Magami  \n**Email:** || magamiabu@gmail.com  \n**Fellow ID:** || FE/23/75909764  \n**Project:** || 3MTT Knowledge Showcase - Cohort 3")
+
