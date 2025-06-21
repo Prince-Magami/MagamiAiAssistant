@@ -1,4 +1,10 @@
 streamlit
-cohere 
-textblob
-validators
+cohere
+pyttsx3
+speechrecognition
+streamlit-option-menu
+requests
+pandas
+matplotlib
+plotly
+python-dotenv
