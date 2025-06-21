@@ -126,6 +126,11 @@ def record_audio():
         except:
             return "Voice not recognized."
 
+if not os.environ.get("STREAMLIT_CLOUD"):
+    import pyttsx3
+    engine = pyttsx3.init()
+    # Use engine.say() and engine.runAndWait() only if available
+
 # ========================== AUTH SYSTEM ============================
 def register():
     st.subheader("Create New Account")
