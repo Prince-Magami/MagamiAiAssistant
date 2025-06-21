@@ -6,15 +6,18 @@ import sqlite3
 import datetime
 import requests
 import json
-import pyttsx3
 import speech_recognition as sr
 from streamlit_option_menu import option_menu
+import streamlit.components.v1 as components
 
-import os
-use_voice = not os.environ.get("STREAMLIT_CLOUD")
-if use_voice:
-    import pyttsx3
-    engine = pyttsx3.init()
+def speak_with_browser(text):
+    escaped_text = text.replace("'", "\\'")
+    components.html(f"""
+        <script>
+            var msg = new SpeechSynthesisUtterance('{escaped_text}');
+            window.speechSynthesis.speak(msg);
+        </script>
+    """, height=0)
 
 
 # ========================== DATABASE SETUP ==========================
@@ -42,7 +45,6 @@ chat_history = st.session_state.chat_histories[st.session_state.session_id]
 # ========================== API & ENGINE ===========================
 cohere_api_key = st.secrets["cohere_api_key"]
 co = Client(cohere_api_key)
-engine = pyttsx3.init()
 
 # ========================== APP CONFIGURATION =============================
 st.set_page_config(page_title="PMAI - Prince Magami AI Assistant", page_icon="🤖", layout="wide")
@@ -94,10 +96,6 @@ def get_response(prompt):
     except Exception as e:
         return f"Error: {str(e)}"
 
-def speak(text):
-    engine.say(text)
-    engine.runAndWait()
-
 def scam_checker_api(text):
     try:
         import urllib.parse
@@ -133,10 +131,6 @@ def record_audio():
         except:
             return "Voice not recognized."
 
-if use_voice:
-    engine.say(response)
-    engine.runAndWait()
-
 
 # ========================== AUTH SYSTEM ============================
 def register():
@@ -170,6 +164,7 @@ def main_app():
 
     languages = ["English", "Pidgin English"]
     modes = ["Chatbox", "Scam/Email Checker", "Exam/Academic Assistant", "Business Helper", "Cybersecurity Advisor"]
+    voice_enabled = st.checkbox("🔊 Enable Voice", value=False)
 
     lang = st.selectbox("Language", languages, index=0)
     mode = st.selectbox("Assistant Mode", modes)
@@ -197,8 +192,10 @@ def main_app():
             reply = get_response(prompt)
         else:
             reply = "Unknown mode."
-
-        speak(reply)
+            
+        if voice_enabled:
+            speak_with_browser(reply)
+            
         st.markdown(f"<div class='response-block'><b>PMAI:</b> {reply}</div>", unsafe_allow_html=True)
 
         rating = st.radio("Was this helpful?", ["👍🏽 Yes", "👎🏽 No"], horizontal=True)
