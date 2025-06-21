@@ -6,7 +6,10 @@ import sqlite3
 import datetime
 import requests
 import json
-import speech_recognition as sr
+try:
+    import speech_recognition as sr
+except:
+    sr = None
 from streamlit_option_menu import option_menu
 import streamlit.components.v1 as components
 
@@ -137,6 +140,8 @@ def save_message(user_id, mode, message, response):
     conn.commit()
 
 def record_audio():
+    if not sr:
+        return "Speech not supported in this environment."
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         st.info("Listening...")
