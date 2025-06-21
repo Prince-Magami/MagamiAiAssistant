@@ -217,6 +217,14 @@ else:
     st.warning("Please login to access this section.")
 
 # ========================== FOOTER INFO ==========================
-st.markdown("---")
-st.markdown("**Developed by:** || Abubakar Muhammad Magami  \n**Email:** || magamiabu@gmail.com  \n**Fellow ID:** || FE/23/75909764  \n**Project:** || 3MTT Knowledge Showcase - Cohort 3")
+st.markdown("---", unsafe_allow_html=True)
+st.markdown("""
+<div style='text-align: center; font-size: 16px;'>
+    <strong>Developed by:</strong> Abubakar Muhammad Magami<br>
+    <strong>Email:</strong> magamiabu@gmail.com<br>
+    <strong>Fellow ID:</strong> FE/23/75909764<br>
+    <strong>Project:</strong> 3MTT Knowledge Showcase - Cohort 3
+</div>
+""", unsafe_allow_html=True)
+
 
