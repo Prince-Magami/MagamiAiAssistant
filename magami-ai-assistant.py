@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from cohere import Client
 from random import choice
@@ -10,6 +9,13 @@ import json
 import pyttsx3
 import speech_recognition as sr
 from streamlit_option_menu import option_menu
+
+import os
+use_voice = not os.environ.get("STREAMLIT_CLOUD")
+if use_voice:
+    import pyttsx3
+    engine = pyttsx3.init()
+
 
 # ========================== DATABASE SETUP ==========================
 conn = sqlite3.connect("pmai_users.db", check_same_thread=False)
@@ -127,10 +133,10 @@ def record_audio():
         except:
             return "Voice not recognized."
 
-if not os.environ.get("STREAMLIT_CLOUD"):
-    import pyttsx3
-    engine = pyttsx3.init()
-    # Use engine.say() and engine.runAndWait() only if available
+if use_voice:
+    engine.say(response)
+    engine.runAndWait()
+
 
 # ========================== AUTH SYSTEM ============================
 def register():
