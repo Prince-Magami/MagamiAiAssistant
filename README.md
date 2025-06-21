@@ -1,27 +1,26 @@
-# Magami AI Assistant & Chatbox
+ PMAI - Prince Magami AI Assistant
 
-Built by Abubakar Muhammad Magami
-Fellow ID: FE/23/75909764 | 3MTT Cohort 
+ is a smart AI-powered chatbot designed to help Nigerian students, businesses, 
+ and everyday users with emotional support, cybersecurity advice, scam detection, 
+ academic assistance, and general chat—all powered by Cohere AI.
 
-PMAI is a powerful, intelligent assistant web application designed by Abubakar Muhammad Magami. Built with Streamlit, Cohere, and SQLite, 
-it serves as a multifunctional digital tool tailored to support Nigerian users and students across various sectors including education, 
-cybersecurity, business, and online safety.
+Features
+- 🌍 **Language Toggle**: Pidgin & English
+- 🔐 **User Login/Register** with secure validation
+- 💾 **User-specific Chat History**
+- 🧠 **Multi-mode AI Assistant**:
+  - Scam Checker
+  - Cybersecurity Advisor
+  - Academic Support
+  - Business Ideas
+  - General Chatbox
 
-This assistant combines natural language processing with speech capabilities to create a conversational interface that is both user-friendly and informative. 
-It provides academic assistance, scam detection, cybersecurity tips, business advice, and general chat support — all while storing user data securely and offering insights through admin-level analytics.
+  
+- Tech Stack
+
+- **Frontend & Backend**: Streamlit
+- **AI Engine**: [Cohere Command-R+](https://cohere.com/)
+- **Database**: SQLite3 (Lightweight & easy-to-deploy)
 
 
- Features
-
-- 🎤 Voice input & output
-- 🔐 User authentication (register/login/logout)
-- 📊 Admin-only analytics panel
-- 🧾 Saved chat history (for logged-in users only)
-- 🛡️ Scam/email/link checker with IPQS API
-- 🎓 Academic help (secondary & university)
-- 💼 Nigerian business advice
-- 🔐 Cybersecurity awareness tips
-- 💬 Chatbox for natural conversations
-- 🎨 Light/Dark theme toggle
-- 📱 Responsive UI for all screen sizes
 
