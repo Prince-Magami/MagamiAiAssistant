@@ -1,26 +1,47 @@
 import streamlit as st
-import streamlit.components.v1 as components
 from cohere import Client
-import uuid, sqlite3, datetime, requests, json
-from streamlit_option_menu import option_menu
 from random import choice
+import uuid
+import sqlite3
+import datetime
+import requests
+import json
+import speech_recognition as sr
+from streamlit_option_menu import option_menu
+import streamlit.components.v1 as components
+import re
 
-# =================== CONFIG =====================
-st.set_page_config(page_title="PMAI - Prince Magami AI Assistant", page_icon="🤖", layout="wide")
-co = Client(st.secrets["cohere_api_key"])
+# ========================== SETUP ==========================
+def speak_with_browser(text):
+    escaped_text = text.replace("'", "\\'")
+    components.html(f"""
+        <script>
+            var msg = new SpeechSynthesisUtterance('{escaped_text}');
+            window.speechSynthesis.speak(msg);
+        </script>
+    """, height=0)
+
 conn = sqlite3.connect("pmai_users.db", check_same_thread=False)
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT, email TEXT, password TEXT)''')
 c.execute('''CREATE TABLE IF NOT EXISTS messages (user_id TEXT, mode TEXT, message TEXT, response TEXT, timestamp TEXT)''')
+c.execute('''CREATE TABLE IF NOT EXISTS views (count INTEGER)''')
+c.execute("INSERT INTO views (count) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM views)")
 conn.commit()
 
-# =================== STATE =====================
+# ========================== SESSION STATE ==========================
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 if "user" not in st.session_state:
     st.session_state.user = None
+if "chat_histories" not in st.session_state:
+    st.session_state.chat_histories = {}
+if st.session_state.session_id not in st.session_state.chat_histories:
+    st.session_state.chat_histories[st.session_state.session_id] = []
+chat_history = st.session_state.chat_histories[st.session_state.session_id]
 
-# =================== STYLE =====================
+# ========================== THEMING ===========================
+st.set_page_config(page_title="PMAI - Prince Magami AI Assistant", page_icon="🤖", layout="wide")
 st.markdown("""
     <style>
     body, .stApp {
@@ -28,180 +49,185 @@ st.markdown("""
         color: #ffffff;
         font-family: 'Segoe UI', sans-serif;
     }
-    .title {
-        text-align: center;
-        font-size: 36px;
-        color: #1e90ff;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
     .response-block {
-        background-color: #122c47;
-        color: #fff;
-        padding: 15px;
-        border-left: 5px solid #1e90ff;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        font-size: 16px;
-    }
-    .form-box {
-        background-color: #112233;
-        padding: 30px;
+        background-color: #1c2d45;
+        color: white;
+        border-left: 4px solid #3399ff;
+        padding: 1rem;
         border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        margin-bottom: 1rem;
+    }
+    .custom-box {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 2rem;
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
     }
     input, textarea {
-        background-color: #0c1a2b !important;
-        color: #ffffff !important;
-        border: 1px solid #1e90ff;
+        background-color: #1f2f40 !important;
+        color: white !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# =================== SPEAK =====================
-def speak_with_browser(text):
-    escaped = text.replace("'", "\'")
-    components.html(f"""
-        <script>
-            var msg = new SpeechSynthesisUtterance('{escaped}');
-            window.speechSynthesis.speak(msg);
-        </script>
-    """, height=0)
+# ========================== API ==========================
+co = Client(st.secrets["cohere_api_key"])
 
-# =================== AI =====================
+# ========================== SIDEBAR ==========================
+with st.sidebar:
+    if st.session_state.user and st.session_state.user[2] == "magamiabu@gmail.com":
+        menu = ["Home", "Logout", "Admin Panel", "Analytics"]
+    else:
+        menu = ["Home", "Login", "Register"]
+    selected = option_menu("PMAI Menu", menu, icons=['house', 'box-arrow-left', 'shield-lock', 'bar-chart'],
+        menu_icon="robot", default_index=0)
+
+# ========================== UTILITIES ==========================
+def validate_password(pw):
+    return len(pw) >= 8 and re.search(r"[A-Za-z]", pw) and re.search(r"[0-9!@#]", pw)
+
 def get_response(prompt):
     try:
-        result = co.generate(
-            model="command-r-plus",
-            prompt=prompt,
-            max_tokens=250,
-            temperature=0.7
-        )
-        return result.generations[0].text.strip()
+        res = co.generate(model="command-r-plus", prompt=prompt, max_tokens=250, temperature=0.7)
+        return res.generations[0].text.strip()
     except Exception as e:
         return f"Error: {str(e)}"
 
 def scam_checker_api(text):
     try:
         import urllib.parse
-        base_url = "https://ipqualityscore.com/api/json/url/"
         api_key = st.secrets["ipqs_api_key"]
-        url = urllib.parse.quote(text.strip())
-        response = requests.get(f"{base_url}{api_key}/{url}").json()
-        if response.get("unsafe"):
-            return f"⚠️ Warning: Unsafe link. Reason: {response.get('suspicious')}"
-        else:
-            return "✅ Link appears safe."
+        url = f"https://ipqualityscore.com/api/json/url/{api_key}/{urllib.parse.quote(text.strip())}"
+        res = requests.get(url).json()
+        return f"⚠️ Warning: Unsafe ({res.get('suspicious', 'Risky')})" if res.get("unsafe") else "✅ Link appears safe."
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"Scan error: {str(e)}"
 
-# =================== UTIL =====================
 def save_message(user_id, mode, msg, res):
-    timestamp = str(datetime.datetime.now())
-    c.execute("INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)", (user_id, mode, msg, res, timestamp, ""))
+    c.execute("INSERT INTO messages VALUES (?, ?, ?, ?, ?, ?)",
+              (user_id, mode, msg, res, str(datetime.datetime.now()), ""))
     conn.commit()
 
-# =================== UI BLOCKS =====================
-def welcome():
-    st.markdown("<div class='title'>🤖 Welcome to PMAI</div>", unsafe_allow_html=True)
-    st.info("""
-    PMAI is your smart Nigerian AI assistant.
-    - 💼 Business support
-    - 🛡 Scam & email checker
-    - 🎓 Academic help
-    - 💬 Smart chat
-    - 🔐 Cybersecurity advice
+def record_audio():
+    try:
+        rec = sr.Recognizer()
+        with sr.Microphone() as source:
+            st.info("🎤 Listening...")
+            audio = rec.listen(source)
+            return rec.recognize_google(audio)
+    except:
+        return "Sorry, could not recognize your voice."
 
-    ⚠ Note: PMAI does not give medical or illegal advice.
-    """)
+# ========================== AUTH ==========================
+def register():
+    with st.container():
+        st.markdown("""<div class='custom-box'>""", unsafe_allow_html=True)
+        st.subheader("🔐 Create New Account")
+        u = st.text_input("Username")
+        e = st.text_input("Email")
+        p = st.text_input("Password", type="password")
+        if st.button("Register"):
+            if not (u and e and p):
+                st.error("Please fill in all fields.")
+            elif not validate_password(p):
+                st.warning("Password must be 8+ chars with letters & numbers/specials.")
+            else:
+                uid = str(uuid.uuid4())
+                c.execute("INSERT INTO users VALUES (?, ?, ?, ?)", (uid, u, e, p))
+                conn.commit()
+                st.session_state.user = (uid, u, e, p)
+                st.success("Account created! Redirecting to Home...")
+                st.experimental_rerun()
+        st.markdown("Already have an account? Go to Login.")
+        st.markdown("""</div>""", unsafe_allow_html=True)
 
 def login():
-    st.markdown("<div class='form-box'>", unsafe_allow_html=True)
-    st.subheader("🔐 Login")
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
-        user = c.fetchone()
-        if user:
-            st.session_state.user = user
-            st.success("Login successful.")
-        else:
-            st.error("Invalid credentials.")
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown("""<div class='custom-box'>""", unsafe_allow_html=True)
+        st.subheader("👤 Login")
+        e = st.text_input("Email")
+        p = st.text_input("Password", type="password")
+        if st.button("Login"):
+            c.execute("SELECT * FROM users WHERE email=? AND password=?", (e, p))
+            u = c.fetchone()
+            if u:
+                st.session_state.user = u
+                st.success("Welcome!")
+                st.experimental_rerun()
+            else:
+                st.error("Invalid credentials.")
+        st.markdown("Don't have an account? Go to Register.")
+        st.markdown("""</div>""", unsafe_allow_html=True)
 
-def register():
-    st.markdown("<div class='form-box'>", unsafe_allow_html=True)
-    st.subheader("📝 Register")
-    username = st.text_input("Username")
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    if st.button("Register"):
-        if username and email and password:
-            user_id = str(uuid.uuid4())
-            c.execute("INSERT INTO users VALUES (?, ?, ?, ?)", (user_id, username, email, password))
-            conn.commit()
-            st.success("Registration complete! Please login.")
-        else:
-            st.warning("All fields are required.")
-    st.markdown("</div>", unsafe_allow_html=True)
+def logout():
+    st.session_state.user = None
+    st.experimental_rerun()
 
+# ========================== CHAT ==========================
 def chat():
-    st.subheader("🧠 Talk to PMAI")
-    modes = ["Chatbox", "Scam/Email Checker", "Exam/Academic Assistant", "Business Helper", "Cybersecurity Advisor"]
-    mode = st.selectbox("Choose Mode", modes)
-    user_input = st.text_area("Ask PMAI:")
-    if user_input:
-        if mode == "Scam/Email Checker":
-            reply = scam_checker_api(user_input)
-        else:
-            prompt = f"Mode: {mode}. User said: {user_input}"
-            reply = get_response(prompt)
-        speak_with_browser(reply)
-        st.markdown(f"<div class='response-block'><b>PMAI:</b> {reply}</div>", unsafe_allow_html=True)
-        save_message(st.session_state.user[0], mode, user_input, reply)
+    st.subheader("💬 PMAI Chat")
+    voice = st.checkbox("🔊 Enable Voice")
+    lang = st.radio("Language", ["English", "Pidgin"], horizontal=True)
+    mode = st.selectbox("Mode", ["Chatbox", "Scam Checker", "Academic Help", "Business Tips", "Cybersecurity"])
+    user_input = st.text_area("Type your message:", key="chatbox")
+    if st.button("Send") or (user_input and st.session_state.get("enter_trigger")):
+        if user_input:
+            st.session_state.enter_trigger = False
+            if mode == "Scam Checker":
+                reply = scam_checker_api(user_input)
+            else:
+                prompt = f"Respond in {lang}. User said: {user_input}" if mode == "Chatbox" else f"You are a {mode} expert. Help the user: {user_input}"
+                reply = get_response(prompt)
+            if voice:
+                speak_with_browser(reply)
+            st.markdown(f"<div class='response-block'><b>PMAI:</b> {reply}</div>", unsafe_allow_html=True)
+            if st.session_state.user:
+                save_message(st.session_state.user[0], mode, user_input, reply)
+            st.session_state.chatbox = ""
 
+# ========================== ADMIN ==========================
 def admin():
-    st.subheader("🔐 Admin Panel")
+    st.title("🔐 Admin Panel")
     c.execute("SELECT COUNT(*) FROM users")
-    st.metric("Total Users", c.fetchone()[0])
+    st.metric("Users", c.fetchone()[0])
     c.execute("SELECT COUNT(*) FROM messages")
-    st.metric("Messages Exchanged", c.fetchone()[0])
+    st.metric("Messages", c.fetchone()[0])
+    c.execute("SELECT * FROM users")
+    with st.expander("📧 Registered Emails"):
+        for u in c.fetchall():
+            st.text(u[2])
+    with st.expander("🧠 All Chat History"):
+        c.execute("SELECT * FROM messages ORDER BY timestamp DESC LIMIT 100")
+        for m in c.fetchall():
+            st.markdown(f"**{m[4]}** - {m[1]}\n\n**User:** {m[2]}\n\n**PMAI:** {m[3]}")
 
+# ========================== ANALYTICS ==========================
 def analytics():
-    st.subheader("📊 Analytics")
+    st.subheader("📊 Usage Analytics")
     c.execute("SELECT mode, COUNT(*) FROM messages GROUP BY mode")
     data = c.fetchall()
-    st.bar_chart({row[0]: row[1] for row in data})
+    st.bar_chart({d[0]: d[1] for d in data})
 
-# =================== SIDEBAR ROUTER =====================
-with st.sidebar:
-    menu = ["Welcome", "Login", "Register"] if not st.session_state.user else ["Home", "Analytics", "Logout"]
-    if st.session_state.user and st.session_state.user[2] == "magamiabu@gmail.com":
-        menu.append("Admin Panel")
-    selected = option_menu("PMAI Menu", menu, icons=['house', 'box-arrow-in-right', 'person-plus', 'bar-chart', 'shield-lock'], menu_icon="robot", default_index=0)
-
-# =================== ROUTES =====================
-if selected == "Welcome":
-    welcome()
+# ========================== ROUTING ==========================
+c.execute("UPDATE views SET count = count + 1")
+conn.commit()
+if selected == "Register":
+    register()
 elif selected == "Login":
     login()
-elif selected == "Register":
-    register()
+elif selected == "Logout":
+    logout()
 elif selected == "Home":
     chat()
 elif selected == "Admin Panel" and st.session_state.user and st.session_state.user[2] == "magamiabu@gmail.com":
     admin()
-elif selected == "Analytics":
+elif selected == "Analytics" and st.session_state.user and st.session_state.user[2] == "magamiabu@gmail.com":
     analytics()
-elif selected == "Logout":
-    st.session_state.user = None
-    st.success("Logged out successfully")
 
-# =================== FOOTER =====================
+# ========================== FOOTER ==========================
 st.markdown("""---
-<center>
-<b>Developed by:</b> Abubakar Muhammad Magami | <b>Email:</b> magamiabu@gmail.com<br>
-<b>Project:</b> 3MTT Knowledge Showcase - Cohort 3
-</center>
+<div style='text-align:center;'>
+<b>PMAI Assistant by Abubakar Muhammad Magami</b><br>
+<small>Email: magamiabu@gmail.com | Fellow ID: FE/23/75909764 | 3MTT Cohort 3</small>
+</div>
 """, unsafe_allow_html=True)
