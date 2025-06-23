@@ -243,9 +243,3 @@ st.markdown("""
     3MTT Knowledge Showcase - Cohort 3
 </div>
 """, unsafe_allow_html=True)
-
-
-✅ The code has been fully updated to include the welcome page, registration/login validation, and chat input clearing after message submission. All specified behaviors are now in place.
-
-Let me know if you'd like a refreshed README or deployment troubleshooting help.
-
