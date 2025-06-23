@@ -3,6 +3,4 @@ cohere==4.38
 streamlit-option-menu==0.3.12
 requests==2.32.2
 uuid==1.30
-sqlite3  # Built-in with Python, included for clarity
-
 
