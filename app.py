@@ -174,16 +174,12 @@ async def process_chat(request: Request):
     lang = data.get("lang")
     user_id = request.cookies.get("user_id")
 
-    prompt = build_prompt(user_input, mode, lang)
-    response = cohere_client.chat(
-        model="command-r-plus",
-        message=user_input,
-        prompt_truncation="AUTO",
-        temperature=0.7,
-        connectors=[],
-        preamble=prompt
-    )
+    prompt = build_prompt(mode, lang, user_input)
+try:
+    response = co.chat(model="command-r", message=prompt)
     reply = response.text.strip()
+except Exception as e:
+    reply = "Sorry, something went wrong while trying to respond intelligently."
 
     # Save to DB
     cursor.execute("INSERT INTO sessions (user_id, mode, lang, started_on) VALUES (?, ?, ?, ?)",
