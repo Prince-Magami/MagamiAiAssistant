@@ -69,6 +69,10 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+    
+@app.route('/chat')
+def chat():
+    return render_template('chat.html')
 
 
 if __name__ == '__main__':
