@@ -1,50 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PMAI Admin Panel</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="dark-theme">
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">🤖 PMAI Admin</h1>
-      <nav>
-        <a href="{{ url_for('chat') }}">← Back to Chat</a>
-      </nav>
-    </header>
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - PMAI{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>📊 Admin Analytics</h2>
+  <p><strong>Total Users:</strong> {{ total_users }}</p>
+  <h3>Registered Emails:</h3>
+  <ul>
+    {% for email in emails %}
+      <li>{{ email }}</li>
+    {% endfor %}
+  </ul>
 
-    <main class="admin-dashboard">
-      <h2>📊 Analytics Dashboard</h2>
-      <div class="metric-box">
-        <p><strong>Total Users:</strong> {{ total_users }}</p>
-        <p><strong>Registered Emails:</strong></p>
-        <ul>
-          {% for email in emails %}
-            <li>{{ email }}</li>
-          {% endfor %}
-        </ul>
+  <h3>🧠 Mode Usage</h3>
+  <ul>
+    {% for mode, count in mode_counts.items() %}
+      <li>{{ mode }}: {{ count }} interactions</li>
+    {% endfor %}
+  </ul>
+
+  <h3>📂 Recent Messages</h3>
+  <div class="chatbox">
+    {% for msg in messages %}
+      <div class="chat-message">
+        <p><strong>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</strong> | <em>{{ msg.mode }}</em></p>
+        <p><strong>User:</strong> {{ msg.content }}</p>
+        <p><strong>PMAI:</strong> {{ msg.response }}</p>
       </div>
-
-      <h3>🧠 Mode Usage</h3>
-      <ul>
-        {% for mode, count in mode_counts.items() %}
-          <li>{{ mode }}: {{ count }} interactions</li>
-        {% endfor %}
-      </ul>
-
-      <h3>📂 Recent Messages</h3>
-      <div class="chat-history">
-        {% for msg in messages %}
-          <div class="chat-msg">
-            <p><strong>{{ msg['timestamp'] }}</strong> | <em>{{ msg['mode'] }} - {{ msg['lang'] }}</em></p>
-            <p><b>User:</b> {{ msg['prompt'] }}</p>
-            <p><b>PMAI:</b> {{ msg['response'] }}</p>
-          </div>
-        {% endfor %}
-      </div>
-    </main>
+    {% endfor %}
   </div>
-</body>
-</html>
+</div>
+{% endblock %}
