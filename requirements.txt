@@ -1,6 +1,0 @@
-streamlit==1.35.0
-cohere==4.38
-streamlit-option-menu==0.3.12
-requests==2.32.2
-uuid==1.30
-
