@@ -1,7 +1,7 @@
 #<!-- Continued: Flask backend and integration (app.py) -->
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+#from datetime import datetime
 import uuid
 import requests
 import os
@@ -27,7 +27,7 @@ class User(db.Model):
     username = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
-    joined = db.Column(db.DateTime, default=datetime.utcnow)
+    joined = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False)
 
 class Message(db.Model):
