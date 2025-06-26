@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PMAI Admin Panel</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+  <div class="container">
+    <header class="header">
+      <h1 class="logo">🤖 PMAI Admin</h1>
+      <nav>
+        <a href="{{ url_for('chat') }}">← Back to Chat</a>
+      </nav>
+    </header>
+
+    <main class="admin-dashboard">
+      <h2>📊 Analytics Dashboard</h2>
+      <div class="metric-box">
+        <p><strong>Total Users:</strong> {{ total_users }}</p>
+        <p><strong>Registered Emails:</strong></p>
+        <ul>
+          {% for email in emails %}
+            <li>{{ email }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <h3>🧠 Mode Usage</h3>
+      <ul>
+        {% for mode, count in mode_counts.items() %}
+          <li>{{ mode }}: {{ count }} interactions</li>
+        {% endfor %}
+      </ul>
+
+      <h3>📂 Recent Messages</h3>
+      <div class="chat-history">
+        {% for msg in messages %}
+          <div class="chat-msg">
+            <p><strong>{{ msg['timestamp'] }}</strong> | <em>{{ msg['mode'] }} - {{ msg['lang'] }}</em></p>
+            <p><b>User:</b> {{ msg['prompt'] }}</p>
+            <p><b>PMAI:</b> {{ msg['response'] }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>
