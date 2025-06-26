@@ -1,32 +1,20 @@
-{% extends 'base.html' %}
-{% block title %}Admin Dashboard - PMAI{% endblock %}
-{% block content %}
-<div class="container">
-  <h2>📊 Admin Analytics</h2>
-  <p><strong>Total Users:</strong> {{ total_users }}</p>
-  <h3>Registered Emails:</h3>
-  <ul>
-    {% for email in emails %}
-      <li>{{ email }}</li>
-    {% endfor %}
-  </ul>
-
-  <h3>🧠 Mode Usage</h3>
-  <ul>
-    {% for mode, count in mode_counts.items() %}
-      <li>{{ mode }}: {{ count }} interactions</li>
-    {% endfor %}
-  </ul>
-
-  <h3>📂 Recent Messages</h3>
-  <div class="chatbox">
-    {% for msg in messages %}
-      <div class="chat-message">
-        <p><strong>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</strong> | <em>{{ msg.mode }}</em></p>
-        <p><strong>User:</strong> {{ msg.content }}</p>
-        <p><strong>PMAI:</strong> {{ msg.response }}</p>
-      </div>
-    {% endfor %}
-  </div>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PMAI Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <main class="admin-stats">
+        <h2>Admin Dashboard</h2>
+        <p><strong>Total Users:</strong> {{ users }}</p>
+        <p><strong>Total Chats:</strong> {{ stats[0] }}</p>
+        <p><strongTotal Message Volume:</strong> {{ stats[1] }} characters</p>
+        <a href="/chat" class="btn">Back to Chat</a>
+    </main>
+    <footer>
+        <p>Prince Magami | magamiabu@gmail.com | 3MTT Knowledge Showcase Project</p>
+    </footer>
+</body>
+                                                                            </html>
