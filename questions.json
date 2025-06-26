@@ -1,0 +1,58 @@
+{
+  "waec": {
+    "math": [
+      {
+        "question": "What is the value of x in the equation 2x + 3 = 9?",
+        "options": ["2", "3", "4", "5"],
+        "answer": "3"
+      },
+      {
+        "question": "Simplify: 5(2x - 3) = 10x - 15. What is x?",
+        "options": ["1", "2", "Any value of x", "None"],
+        "answer": "Any value of x"
+      }
+    ],
+    "english": [
+      {
+        "question": "Identify the noun in this sentence: 'The boy ran quickly.'",
+        "options": ["ran", "quickly", "boy", "the"],
+        "answer": "boy"
+      },
+      {
+        "question": "Which word is a synonym of 'happy'?",
+        "options": ["sad", "glad", "angry", "shy"],
+        "answer": "glad"
+      }
+    ]
+  },
+  "jamb": {
+    "physics": [
+      {
+        "question": "What is the SI unit of force?",
+        "options": ["Joule", "Watt", "Newton", "Pascal"],
+        "answer": "Newton"
+      }
+    ],
+    "chemistry": [
+      {
+        "question": "Which of the following is a noble gas?",
+        "options": ["Oxygen", "Nitrogen", "Helium", "Hydrogen"],
+        "answer": "Helium"
+      }
+    ]
+  },
+  "university": {
+    "cs": [
+      {
+        "question": "What does HTTP stand for?",
+        "options": ["HyperText Transfer Protocol", "High Text Transfer Protocol", "Hyperlink Text Transfer Protocol", "HyperText Transfer Procedure"],
+        "answer": "HyperText Transfer Protocol"
+      },
+      {
+        "question": "Which of these is a Python keyword?",
+        "options": ["function", "def", "define", "lambda"],
+        "answer": "def"
+      }
+    ]
+  }
+}
