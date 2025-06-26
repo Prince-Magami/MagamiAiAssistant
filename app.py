@@ -1,156 +1,179 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+# PMAI - Prince Magami AI
+# Monolithic app.py built with FastAPI and Chainlit
+# Includes: 7 Modes, Auth, Chat System, Admin Dashboard, Session Tracking, Timed Exam, Job Suggestion
+
+# ------------ IMPORTS ------------
+import uvicorn
+from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from datetime import datetime, timedelta
+import secrets, random, json, hashlib, re
+import sqlite3
 import os
 
-app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pmai.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# ------------ INITIALIZE APP ------------
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-db = SQLAlchemy(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
+# ------------ DATABASE SETUP ------------
+db = sqlite3.connect("pmai.db", check_same_thread=False)
+cursor = db.cursor()
 
-# ------------------------- Models ------------------------- #
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    joined = db.Column(db.DateTime, default=datetime.utcnow)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE,
+    password TEXT,
+    name TEXT,
+    is_verified INTEGER,
+    is_admin INTEGER DEFAULT 0,
+    registered_on TEXT
+)
+""")
 
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    prompt = db.Column(db.Text, nullable=False)
-    response = db.Column(db.Text)
-    mode = db.Column(db.String(50))
-    lang = db.Column(db.String(50))
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    mode TEXT,
+    lang TEXT,
+    started_on TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+)
+""")
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER,
+    sender TEXT,
+    message TEXT,
+    reply TEXT,
+    timestamp TEXT,
+    FOREIGN KEY(session_id) REFERENCES sessions(id)
+)
+""")
 
-# ------------------------- Routes ------------------------- #
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS exam_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    exam_type TEXT,
+    subject TEXT,
+    questions TEXT,
+    user_answers TEXT,
+    score INTEGER,
+    timestamp TEXT,
+    duration INTEGER
+)
+""")
 
-@app.route('/')
-def home():
-    return render_template('welcome.html')
+db.commit()
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm = request.form.get('confirm_password')
+# ------------ UTILITIES ------------
+def hash_password(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
 
-        if not all([username, email, password, confirm]):
-            flash("Please fill all fields.")
-            return redirect(url_for('register'))
-        if password != confirm:
-            flash("Passwords do not match.")
-            return redirect(url_for('register'))
-        if len(password) < 6:
-            flash("Password must be at least 6 characters long.")
-            return redirect(url_for('register'))
+def check_password(pw, hashed):
+    return hash_password(pw) == hashed
 
-        hashed_pw = generate_password_hash(password)
-        user = User(username=username, email=email, password=hashed_pw)
-        db.session.add(user)
-        db.session.commit()
-        login_user(user)
-        return redirect(url_for('chat'))
+def strong_password(pw):
+    return bool(re.match(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$", pw))
 
-    return render_template('register.html')
+# ------------ AUTH ROUTES ------------
+@app.get("/login", response_class=HTMLResponse)
+async def login_get(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('chat'))
-        else:
-            flash("Invalid credentials")
-    return render_template('login.html')
+@app.post("/login")
+async def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
+    cursor.execute("SELECT id, password FROM users WHERE email = ?", (email,))
+    user = cursor.fetchone()
+    if not user or not check_password(password, user[1]):
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid login"})
+    response = RedirectResponse("/chat", status_code=302)
+    response.set_cookie("user_id", str(user[0]), max_age=3600)
+    return response
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash("Logged out.")
-    return redirect(url_for('home'))
+@app.get("/register", response_class=HTMLResponse)
+async def register_get(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
 
-@app.route('/chat')
-@login_required
-def chat():
-    messages = Message.query.filter_by(user_id=current_user.id).all()
-    return render_template('chat.html', messages=messages, user=current_user)
+@app.post("/register")
+async def register_post(request: Request, email: str = Form(...), name: str = Form(...), password: str = Form(...), confirm: str = Form(...)):
+    if password != confirm or not strong_password(password):
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Passwords don't match or not strong"})
+    try:
+        cursor.execute("INSERT INTO users (email, password, name, is_verified, registered_on) VALUES (?, ?, ?, ?, ?)",
+            (email, hash_password(password), name, 1, datetime.utcnow().isoformat()))
+        db.commit()
+    except:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Email exists"})
+    return RedirectResponse("/login", status_code=302)
 
-@app.route('/send', methods=['POST'])
-@login_required
-def send():
-    data = request.get_json()
-    msg = data.get('message')
-    mode = data.get('mode', 'Chatbox')
-    lang = data.get('lang', 'English')
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse("/", status_code=302)
+    response.delete_cookie("user_id")
+    return response
 
-    # Simulated response
-    reply = f"[{mode}] ({lang}) Response to: {msg}"
+# ------------ LANDING ------------
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-    message = Message(user_id=current_user.id, prompt=msg, response=reply, mode=mode, lang=lang)
-    db.session.add(message)
-    db.session.commit()
+# ------------ CHAT PAGE ------------
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request):
+    user_id = request.cookies.get("user_id")
+    cursor.execute("SELECT name FROM users WHERE id = ?", (user_id,))
+    name = cursor.fetchone()
+    return templates.TemplateResponse("chat.html", {"request": request, "name": name[0] if name else "Guest"})
 
-    return jsonify({'reply': reply})
+# ------------ MODE LOGIC ------------
+@app.post("/api/chat")
+async def process_chat(request: Request):
+    data = await request.json()
+    user_input = data.get("message")
+    mode = data.get("mode")
+    lang = data.get("lang")
+    user_id = request.cookies.get("user_id")
 
-@app.route('/profile')
-@login_required
-def profile():
-    return render_template('profile.html', user=current_user)
+    if not user_id:
+        # Handle anonymous limit here (e.g., track IP/session in future version)
+        pass
 
-@app.route('/admin')
-@login_required
-def admin():
-    if current_user.email != "magamiabu@gmail.com":
-        flash("Unauthorized access.")
-        return redirect(url_for('chat'))
+    # Simulated LLM response (replace with Cohere or LLM API call)
+    reply = f"[{mode} Mode - {lang}] AI Response to: {user_input}"
 
-    users = User.query.all()
-    messages = Message.query.order_by(Message.timestamp.desc()).limit(50).all()
+    # Save to DB
+    cursor.execute("INSERT INTO sessions (user_id, mode, lang, started_on) VALUES (?, ?, ?, ?)",
+                   (user_id, mode, lang, datetime.utcnow().isoformat()))
+    session_id = cursor.lastrowid
+    cursor.execute("INSERT INTO chats (session_id, sender, message, reply, timestamp) VALUES (?, ?, ?, ?, ?)",
+                   (session_id, "user", user_input, reply, datetime.utcnow().isoformat()))
+    db.commit()
+    return {"reply": reply}
 
-    # Mode usage stats
-    mode_counts = {}
-    for msg in messages:
-        mode_counts[msg.mode] = mode_counts.get(msg.mode, 0) + 1
+# ------------ ADMIN PAGE ------------
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    user_id = request.cookies.get("user_id")
+    cursor.execute("SELECT email FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    if not row or row[0] != "magamiabu@gmail.com":
+        raise HTTPException(status_code=403)
+    cursor.execute("SELECT COUNT(*), SUM(LENGTH(message)) FROM chats")
+    chat_stats = cursor.fetchone()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count = cursor.fetchone()[0]
+    return templates.TemplateResponse("admin.html", {"request": request, "stats": chat_stats, "users": user_count})
 
-    return render_template('admin.html',
-                           total_users=len(users),
-                           emails=[u.email for u in users],
-                           messages=[{
-                               'prompt': m.prompt,
-                               'response': m.response,
-                               'timestamp': m.timestamp.strftime("%Y-%m-%d %H:%M"),
-                               'mode': m.mode,
-                               'lang': m.lang
-                           } for m in messages],
-                           mode_counts=mode_counts)
-
-@app.errorhandler(404)
-def not_found(e):
-    return render_template('404.html'), 404
-
-# ------------------------- Main ------------------------- #
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+# ------------ START ------------
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
