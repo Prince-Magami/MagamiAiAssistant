@@ -1,4 +1,4 @@
-<!-- Continued: Flask backend and integration (app.py) -->
+#<!-- Continued: Flask backend and integration (app.py) -->
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
