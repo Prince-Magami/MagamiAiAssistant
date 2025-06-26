@@ -1,0 +1,16 @@
+
+---
+
+### 3. ✅ `.env` (Optional for secret keys)
+If you're using an API key (like from Cohere or IPQS), create a `.env` file and use `python-dotenv` to load secrets securely instead of hardcoding them in `app.py`.
+
+---
+
+### 4. `favicon.ico` & `logo.png` (Optional but professional)
+Put them in `static/` and link in `base.html`.
+
+---
+
+### 5. (Optional) `Procfile` (for deploying on Render)
+```txt
+web: gunicorn app:app
