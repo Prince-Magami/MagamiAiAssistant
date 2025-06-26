@@ -10,11 +10,14 @@ from datetime import datetime, timedelta
 import secrets, random, json, hashlib, re
 import sqlite3
 import os
+import cohere
 
 # ------------ INITIALIZE APP ------------
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+cohere_client = cohere.Client(os.getenv("COHERE_API_KEY"))
 
 # ------------ DATABASE SETUP ------------
 db = sqlite3.connect("pmai.db", check_same_thread=False)
@@ -81,6 +84,37 @@ def check_password(pw, hashed):
 def strong_password(pw):
     return bool(re.match(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$", pw))
 
+# ------------ PROMPT GENERATION ------------
+def build_prompt(message, mode, lang):
+    mode_instructions = {
+        "scam": "Scan this message or link and check if it's a scam or phishing attempt. Be detailed and return a safety score (0-100%).",
+        "cyber": "Give detailed and practical cybersecurity tips related to the message.",
+        "edu": "You're an educational assistant. Help the student by providing accurate and supportive information.",
+        "exam": "You're simulating an exam assistant. Treat the user input like an exam-style question. Explain the correct answer clearly.",
+        "job": "Based on the user's background, suggest 3 suitable job roles and professionally explain why each one fits.",
+        "chatbox": "You're a smart, witty, and funny chatbot like ChatGPT. Respond casually and helpfully.",
+        "advice": "You're a wise advisor. Give general life advice based on what the user is asking."
+    }
+
+    lang_preface = {
+        "en": "Respond in English.",
+        "pidgin": "Respond strictly in Nigerian Pidgin English. Make it natural and understandable to locals."
+    }
+
+    instruction = mode_instructions.get(mode, "Be helpful.")
+    preface = lang_preface.get(lang, "Respond in English.")
+
+    return f"""
+You are PMAI - Prince Magami AI.
+Mode: {mode}
+Language: {lang}
+
+{instruction}
+{preface}
+
+User Message: {message}
+"""
+
 # ------------ AUTH ROUTES ------------
 @app.get("/login", response_class=HTMLResponse)
 async def login_get(request: Request):
@@ -140,12 +174,16 @@ async def process_chat(request: Request):
     lang = data.get("lang")
     user_id = request.cookies.get("user_id")
 
-    if not user_id:
-        # Handle anonymous limit here (e.g., track IP/session in future version)
-        pass
-
-    
-    reply = f"[{mode} Mode - {lang}] AI Response to: {user_input}"
+    prompt = build_prompt(user_input, mode, lang)
+    response = cohere_client.chat(
+        model="command-r-plus",
+        message=user_input,
+        prompt_truncation="AUTO",
+        temperature=0.7,
+        connectors=[],
+        preamble=prompt
+    )
+    reply = response.text.strip()
 
     # Save to DB
     cursor.execute("INSERT INTO sessions (user_id, mode, lang, started_on) VALUES (?, ?, ?, ?)",
@@ -173,3 +211,4 @@ async def admin_page(request: Request):
 # ------------ START ------------
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    
