@@ -1,7 +1,3 @@
-# PMAI - Prince Magami AI
-# Monolithic app.py built with FastAPI and Chainlit
-# Includes: 7 Modes, Auth, Chat System, Admin Dashboard, Session Tracking, Timed Exam, Job Suggestion
-
 # ------------ IMPORTS ------------
 import uvicorn
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
@@ -148,7 +144,7 @@ async def process_chat(request: Request):
         # Handle anonymous limit here (e.g., track IP/session in future version)
         pass
 
-    # Simulated LLM response (replace with Cohere or LLM API call)
+    
     reply = f"[{mode} Mode - {lang}] AI Response to: {user_input}"
 
     # Save to DB
