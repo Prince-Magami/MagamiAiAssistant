@@ -1,8 +1,6 @@
-Flask
-requests
-Flask
-flask_sqlalchemy
-flask_bcrypt
-flask_login
-flask_cors
-cohere
+Flask==2.3.2
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+gunicorn==21.2.0
+Werkzeug==2.3.7
+python-dotenv==1.0.1
