@@ -1,7 +1,3 @@
-# PMAI - Prince Magami AI
-# Monolithic app.py built with FastAPI and Chainlit
-# Includes: 7 Modes, Auth, Chat System, Admin Dashboard, Session Tracking, Timed Exam, Job Suggestion
-
 # ------------ IMPORTS ------------
 import uvicorn
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
@@ -193,4 +189,3 @@ async def admin_page(request: Request):
 # ------------ START ------------
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-                                          
