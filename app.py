@@ -1,37 +1,42 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-import requests
-import uuid
 import os
 
-# === CONFIGURATION ===
-app = Flask(__name__, static_url_path='/static', static_folder='static')
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecret")
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pmai.db'
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# === DATABASE MODELS ===
-class User(db.Model):
-    id = db.Column(db.String(100), primary_key=True, default=lambda: str(uuid.uuid4()))
+# Initialize database and login manager
+db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Models
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     joined = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Message(db.Model):
-    id = db.Column(db.String(100), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(100), db.ForeignKey('user.id'))
-    mode = db.Column(db.String(50))
-    lang = db.Column(db.String(20))
-    prompt = db.Column(db.Text)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    content = db.Column(db.Text, nullable=False)
     response = db.Column(db.Text)
+    mode = db.Column(db.String(50))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-# === ROUTES (EXAMPLES) ===
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 @app.route('/')
 def welcome():
     return render_template('welcome.html')
@@ -43,13 +48,23 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm = request.form['confirm']
+
+        if not all([username, email, password, confirm]):
+            flash("Please fill all fields.")
+            return redirect(url_for('register'))
         if password != confirm:
-            return render_template('register.html', error="Passwords do not match.")
-        hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
+            flash("Passwords do not match.")
+            return redirect(url_for('register'))
+        if len(password) < 8:
+            flash("Password must be at least 8 characters long.")
+            return redirect(url_for('register'))
+
+        hashed_pw = generate_password_hash(password)
         new_user = User(username=username, email=email, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
-        session['user'] = email
+        flash("Registration successful! Taking you to the home page...")
+        login_user(new_user)
         return redirect(url_for('chat'))
     return render_template('register.html')
 
@@ -59,28 +74,58 @@ def login():
         email = request.form['email']
         password = request.form['password']
         user = User.query.filter_by(email=email).first()
-        if user and bcrypt.check_password_hash(user.password, password):
-            session['user'] = email
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            flash("Login successful")
             return redirect(url_for('chat'))
-        return render_template('login.html', error="Invalid credentials.")
+        else:
+            flash("Invalid email or password")
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.clear()
+    logout_user()
+    flash("Logged out successfully")
     return redirect(url_for('login'))
-    
+
 @app.route('/chat')
 @login_required
 def chat():
-    user = User.query.get(session['user_id']) if 'user_id' in session else None
-    return render_template('chat.html', user=user)
+    return render_template('chat.html', user=current_user)
 
-with app.app_context():
-    db.create_all()
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', user=current_user)
 
+@app.route('/analytics')
+@login_required
+def analytics():
+    if current_user.email == 'magamiabu@gmail.com':
+        messages = Message.query.all()
+        users = User.query.all()
+        return render_template('analytics.html', users=users, messages=messages)
+    else:
+        flash("Unauthorized access")
+        return redirect(url_for('chat'))
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+@app.route('/send', methods=['POST'])
+@login_required
+def send():
+    prompt = request.form['prompt']
+    mode = request.form.get('mode', 'general')
 
+    # Simulated AI response logic
+    response = f"[AI-{mode}] Response to: {prompt}"
+
+    new_msg = Message(user_id=current_user.id, content=prompt, response=response, mode=mode)
+    db.session.add(new_msg)
+    db.session.commit()
+
+    return {'response': response}
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)), debug=True)
