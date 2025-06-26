@@ -4,4 +4,4 @@ jinja2
 python-multipart
 pydantic
 aiofiles
-cohere
+cohere==4.38
