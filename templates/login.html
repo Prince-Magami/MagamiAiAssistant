@@ -1,32 +1,14 @@
-<!-- login.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PMAI | Login</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <div class="container">
-    <div class="card">
-      <div class="logo">🤖 <span>PMAI</span></div>
-      <h2>Welcome Back</h2>
-      <p class="subtext">Login to your account</p>
-
-      <form method="POST" action="/login">
-        <label for="email">Email</label>
-        <input type="email" name="email" placeholder="Enter your email" required>
-
-        <label for="password">Password</label>
-        <input type="password" name="password" placeholder="Enter your password" required>
-
-        <button type="submit" class="btn">Login</button>
-      </form>
-
-      <p class="switch">Don't have an account? <a href="/register">Register here</a></p>
-      <p class="switch"><a href="/guest">Continue as guest</a></p>
-    </div>
-  </div>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Login - PMAI{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Welcome Back</h2>
+  <form method="POST">
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+  </form>
+  <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+  <p><a href="{{ url_for('guest') }}">Continue as Guest</a></p>
+</div>
+{% endblock %}
