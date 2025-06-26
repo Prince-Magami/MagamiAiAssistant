@@ -7,7 +7,7 @@ import uuid
 import os
 
 # === CONFIGURATION ===
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static')
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecret")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///pmai.db'
 db = SQLAlchemy(app)
