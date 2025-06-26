@@ -1,0 +1,221 @@
+<!-- File: templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMAI - Welcome</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="logo glow">🤖 PMAI</div>
+    <h1>Welcome to PMAI</h1>
+    <p>Your smart AI assistant for school support, scam checks, business advice & more.</p>
+    <div class="button-group">
+      <a href="/register" class="btn">Register</a>
+      <a href="/login" class="btn">Login</a>
+      <a href="/chat" class="btn">Continue without Registering</a>
+    </div>
+  </div>
+</body>
+</html>
+
+<!-- File: templates/register.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMAI - Register</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="logo glow">🤖 PMAI</div>
+    <h2>Create an Account</h2>
+    <form method="POST">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+      <button type="submit" class="btn">Register</button>
+    </form>
+    <p>Already have an account? <a href="/login">Login here</a></p>
+  </div>
+</body>
+</html>
+
+<!-- File: templates/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMAI - Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="logo glow">🤖 PMAI</div>
+    <h2>Login</h2>
+    <form method="POST">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit" class="btn">Login</button>
+    </form>
+    <p>No account? <a href="/register">Register here</a></p>
+  </div>
+</body>
+</html>
+
+<!-- File: templates/chat.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMAI - Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="chat-wrapper">
+    <div class="logo glow">🤖 PMAI</div>
+    <div class="top-bar">
+      <span>{{ username }}</span>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <div class="language-toggle">
+      <label><input type="radio" name="lang" value="English" checked> English</label>
+      <label><input type="radio" name="lang" value="Pidgin"> Pidgin</label>
+    </div>
+
+    <div class="mode-select">
+      <select id="mode">
+        <option>Chatbox</option>
+        <option>Scam/Email Checker</option>
+        <option>Exam/Academic Assistant</option>
+        <option>Cybersecurity Advisor</option>
+        <option>Business Helper</option>
+      </select>
+    </div>
+
+    <div id="chat-box">
+      {% for msg in messages %}
+        <div class="msg"><strong>You:</strong> {{ msg.prompt }}</div>
+        <div class="msg reply"><strong>PMAI:</strong> {{ msg.response }}</div>
+      {% endfor %}
+    </div>
+
+    <form id="chat-form">
+      <textarea id="user-input" placeholder="Type your message..." rows="2"></textarea>
+      <button id="send-btn" class="btn" type="submit">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("user-input");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      if (input.value.trim() !== "") {
+        form.submit();
+      }
+    });
+  </script>
+</body>
+</html>
+
+<!-- File: static/style.css -->
+body {
+  background: #0f172a;
+  font-family: 'Segoe UI', sans-serif;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 500px;
+  margin: 50px auto;
+  padding: 20px;
+  background: #1e293b;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.chat-wrapper {
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #1e293b;
+  border-radius: 12px;
+  color: white;
+}
+
+.logo {
+  font-size: 32px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.glow {
+  text-shadow: 0 0 10px #00ffff;
+  color: #0ff;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+  background: #334155;
+  color: white;
+}
+
+.btn {
+  display: inline-block;
+  background: #0ea5e9;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-top: 10px;
+}
+
+.logout-btn {
+  float: right;
+  color: #f87171;
+  text-decoration: none;
+}
+
+.language-toggle, .mode-select {
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+#chat-box {
+  background: #0f172a;
+  height: 300px;
+  overflow-y: scroll;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.msg {
+  background: #334155;
+  padding: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
+}
+
+.reply {
+  background: #1e40af;
+}
