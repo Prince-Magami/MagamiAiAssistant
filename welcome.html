@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to PMAI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+  <div class="container center-screen">
+    <h1 class="logo big">🤖 PMAI</h1>
+    <h2>Your Smart AI Assistant</h2>
+    <p>Academic Help • Scam Detection • Business Tips • Cybersecurity • Pidgin & English</p>
+
+    <div class="welcome-buttons">
+      <a class="button" href="{{ url_for('register') }}">📝 Register</a>
+      <a class="button" href="{{ url_for('login') }}">🔐 Login</a>
+      <a class="button" href="{{ url_for('chat') }}">🚀 Continue without Account</a>
+    </div>
+  </div>
+</body>
+</html>
