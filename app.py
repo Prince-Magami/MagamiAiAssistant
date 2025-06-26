@@ -71,8 +71,10 @@ def logout():
     return redirect(url_for('login'))
     
 @app.route('/chat')
+@login_required
 def chat():
-    return render_template('chat.html')
+    user = User.query.get(session['user_id']) if 'user_id' in session else None
+    return render_template('chat.html', user=user)
 
 with app.app_context():
     db.create_all()
