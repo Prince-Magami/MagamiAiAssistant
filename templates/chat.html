@@ -1,46 +1,46 @@
-{% extends 'base.html' %}
-{% block title %}Chat - PMAI{% endblock %}
-{% block content %}
-<div class="chat-wrapper">
-  <div class="top-bar">
-    <span><strong>{{ user.username if user else "Guest" }}</strong></span>
-    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-  </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PMAI Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script defer src="/static/chat.js"></script>
+</head>
+<body>
+    <header>
+        <h2>Welcome, {{ name }}</h2>
+        <div class="logout">
+            <a href="/logout" class="btn">Logout</a>
+        </div>
+    </header>
 
-  <div class="language-toggle">
-    <label><input type="radio" name="lang" value="English" checked> English</label>
-    <label><input type="radio" name="lang" value="Pidgin"> Pidgin</label>
-  </div>
+    <main>
+        <section id="mode-select">
+            <select id="mode">
+                <option value="scan">Scan Emails & Links</option>
+                <option value="cyber">Cybersecurity Tips</option>
+                <option value="edu">Educational Assistant</option>
+                <option value="exam">Exam Practice</option>
+                <option value="job">Job Suggestion</option>
+                <option value="chat">Chatbox</option>
+                <option value="advice">General Advice</option>
+            </select>
+            <select id="lang">
+                <option value="english">English</option>
+                <option value="pidgin">Pidgin</option>
+            </select>
+        </section>
 
-  <div class="mode-select">
-    <select id="modeSelect">
-      <option>Chatbox</option>
-      <option>Scam/Email Checker</option>
-      <option>Exam/Academic Assistant</option>
-      <option>Cybersecurity Advisor</option>
-      <option>Business Helper</option>
-    </select>
-  </div>
+        <div id="chat-window"></div>
 
-  <div id="chat-box">
-    {% for msg in messages %}
-      <div class="msg"><strong>You:</strong> {{ msg.content }}</div>
-      <div class="msg reply"><strong>PMAI:</strong> {{ msg.response }}</div>
-    {% endfor %}
-  </div>
+        <form id="chat-form">
+            <input type="text" id="chat-input" placeholder="Ask something..." required>
+            <button type="submit">Send</button>
+        </form>
+    </main>
 
-  <form id="chat-form" method="POST" action="/send">
-    <textarea name="prompt" id="user-input" placeholder="Type your message..." rows="2" required></textarea>
-    <button class="btn" type="submit">Send</button>
-  </form>
-</div>
-
-<script>
-document.getElementById("chat-form").addEventListener("submit", function(e) {
-  const input = document.getElementById("user-input");
-  if (input.value.trim() === "") {
-    e.preventDefault();
-  }
-});
-</script>
-{% endblock %}
+    <footer>
+        <p>Prince Magami | magamiabu@gmail.com | 3MTT Knowledge Showcase Project</p>
+    </footer>
+</body>
+</html>
