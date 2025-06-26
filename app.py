@@ -6,6 +6,9 @@ import uuid
 import requests
 import os
 import cohere
+import flask
+from flask import request, jsonify
+import datetime
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -132,6 +135,31 @@ def admin():
     users = User.query.all()
     messages = Message.query.all()
     return render_template("admin.html", users=users, messages=messages)
+@app.route("/send", methods=["POST"])
+def send():
+    if request.method == "POST":
+        data = request.get_json()
+        message = data.get("message")
+        mode = data.get("mode")
+        lang = data.get("lang")
+
+        if not message:
+            return jsonify({"reply": "Please enter a valid message."})
+
+        prompt = message
+        if mode == "Scam/Email Checker":
+            reply = scam_check(prompt)
+        else:
+            if lang == "Pidgin":
+                prompt = f"Explain in Nigerian pidgin: {prompt}"
+            reply = get_response(prompt)
+
+        # Save message if logged in
+        if "user" in session and session["user"]:
+            user = session["user"]
+            save_message(user["id"], mode, lang, message, reply)
+
+        return jsonify({"reply": reply})
 
 # ===================== RUN =====================
 if __name__ == '__main__':
