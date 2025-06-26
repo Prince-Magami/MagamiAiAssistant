@@ -1,23 +1,27 @@
+# PMAI - Prince Magami AI
+# Monolithic app.py built with FastAPI and Chainlit
+# Includes: 7 Modes, Auth, Chat System, Admin Dashboard, Session Tracking, Timed Exam, Job Suggestion
+
 # ------------ IMPORTS ------------
 import uvicorn
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
-import secrets, random, json, hashlib, re
+import secrets, random, json, hashlib, re, time
 import sqlite3
 import os
 import cohere
 
 # ------------ INITIALIZE APP ------------
-app = FastAPI()
+app = FastAPI(
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-cohere_client = cohere.Client(os.getenv("COHERE_API_KEY"))
+co = cohere.Client("your_cohere_api_key")
 
 # ------------ DATABASE SETUP ------------
 db = sqlite3.connect("pmai.db", check_same_thread=False)
@@ -84,36 +88,19 @@ def check_password(pw, hashed):
 def strong_password(pw):
     return bool(re.match(r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$", pw))
 
-# ------------ PROMPT GENERATION ------------
-def build_prompt(message, mode, lang):
-    mode_instructions = {
-        "scam": "Scan this message or link and check if it's a scam or phishing attempt. Be detailed and return a safety score (0-100%).",
-        "cyber": "Give detailed and practical cybersecurity tips related to the message.",
-        "edu": "You're an educational assistant. Help the student by providing accurate and supportive information.",
-        "exam": "You're simulating an exam assistant. Treat the user input like an exam-style question. Explain the correct answer clearly.",
-        "job": "Based on the user's background, suggest 3 suitable job roles and professionally explain why each one fits.",
-        "chatbox": "You're a smart, witty, and funny chatbot like ChatGPT. Respond casually and helpfully.",
-        "advice": "You're a wise advisor. Give general life advice based on what the user is asking."
+def build_prompt(mode, lang, user_input):
+    base_persona = {
+        "scam": "Act like a cybersecurity analyst. Scan messages for phishing and fraud attempts. Respond seriously.",
+        "cyber": "Act like a professional cybersecurity advisor. Provide practical and technical security advice.",
+        "edu": "Act like a tutor. Help secondary and university students understand complex topics clearly.",
+        "exam": "Act like an examiner. Ask subject-based questions and score them fairly with explanations.",
+        "job": "Act like a career coach. Suggest jobs and CV improvements based on user's skills.",
+        "chat": "Be witty, fun, and informal. Just like ChatGPT in freestyle mode.",
+        "advice": "Be wise and kind. Give helpful, honest life advice."
     }
-
-    lang_preface = {
-        "en": "Respond in English.",
-        "pidgin": "Respond strictly in Nigerian Pidgin English. Make it natural and understandable to locals."
-    }
-
-    instruction = mode_instructions.get(mode, "Be helpful.")
-    preface = lang_preface.get(lang, "Respond in English.")
-
-    return f"""
-You are PMAI - Prince Magami AI.
-Mode: {mode}
-Language: {lang}
-
-{instruction}
-{preface}
-
-User Message: {message}
-"""
+    persona = base_persona.get(mode, "Respond clearly to user input.")
+    language_note = "Respond only in Nigerian Pidgin" if lang == "pidgin" else "Respond in formal English"
+    return f"{persona}\n{language_note}.\nUser: {user_input}\nAssistant:"
 
 # ------------ AUTH ROUTES ------------
 @app.get("/login", response_class=HTMLResponse)
@@ -174,14 +161,13 @@ async def process_chat(request: Request):
     lang = data.get("lang")
     user_id = request.cookies.get("user_id")
 
-    prompt = build_prompt(mode, lang, user_input)
-try:
-    response = co.chat(model="command-r", message=prompt)
-    reply = response.text.strip()
-except Exception as e:
-    reply = "Sorry, something went wrong while trying to respond intelligently."
+    if not user_id:
+        pass  # handle anon
 
-    # Save to DB
+    prompt = build_prompt(mode, lang, user_input)
+    cohere_response = co.chat(model="command-r-plus", message=user_input, preamble=prompt)
+    reply = cohere_response.text.strip()
+
     cursor.execute("INSERT INTO sessions (user_id, mode, lang, started_on) VALUES (?, ?, ?, ?)",
                    (user_id, mode, lang, datetime.utcnow().isoformat()))
     session_id = cursor.lastrowid
@@ -207,4 +193,4 @@ async def admin_page(request: Request):
 # ------------ START ------------
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-    
+                                          
