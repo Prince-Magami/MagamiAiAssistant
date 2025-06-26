@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Profile - PMAI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="chat-container">
+        <aside class="sidebar">
+            <div class="logo-glow">🤖 PMAI</div>
+            <nav>
+                <ul>
+                    <li><a href="/chat">Chat</a></li>
+                    <li><a href="/profile" class="active">Profile</a></li>
+                    {% if user.email == 'magamiabu@gmail.com' %}
+                    <li><a href="/admin">Analytics</a></li>
+                    {% endif %}
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="chat-main">
+            <div class="chat-header">
+                <h1>Your Profile</h1>
+            </div>
+
+            <div class="profile-card">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Joined:</strong> {{ user.joined }}</p>
+            </div>
+
+            <form method="POST" action="/delete-account">
+                <button class="delete-btn" onclick="return confirm('Are you sure you want to delete your account?')">Delete My Account</button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
