@@ -5,16 +5,41 @@
     <title>PMAI Chat</title>
     <link rel="stylesheet" href="/static/style.css">
     <script defer src="/static/chat.js"></script>
+    <style>
+        body { display: flex; height: 100vh; margin: 0; font-family: Arial, sans-serif; }
+        aside { width: 250px; background: #f1f1f1; border-right: 1px solid #ccc; overflow-y: auto; padding: 10px; }
+        aside h3 { text-align: center; }
+        aside ul { list-style: none; padding: 0; }
+        aside ul li { padding: 8px; cursor: pointer; border-bottom: 1px solid #ddd; }
+        aside ul li:hover { background: #eaeaea; }
+        main { flex: 1; display: flex; flex-direction: column; }
+        header, footer { padding: 10px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center; }
+        #chat-window { flex: 1; padding: 10px; overflow-y: auto; background: #fff; }
+        .message { margin-bottom: 15px; }
+        .user { font-weight: bold; color: #1a73e8; }
+        .bot { font-weight: bold; color: #e8711a; }
+        #chat-form { display: flex; padding: 10px; background: #f9f9f9; border-top: 1px solid #ccc; }
+        #chat-input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 12px; margin-left: 5px; border: none; background: #1a73e8; color: white; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #155ab6; }
+    </style>
 </head>
 <body>
-    <header>
-        <h2>Welcome, {{ name }}</h2>
-        <div class="logout">
-            <a href="/logout" class="btn">Logout</a>
-        </div>
-    </header>
+    <aside>
+        <h3>Sessions</h3>
+        <ul id="session-list">
+            <!-- Dynamically filled with JS -->
+        </ul>
+    </aside>
 
     <main>
+        <header>
+            <h2>Welcome, {{ name }}</h2>
+            <div class="logout">
+                <a href="/logout" class="btn">Logout</a>
+            </div>
+        </header>
+
         <section id="mode-select">
             <select id="mode">
                 <option value="scan">Scan Emails & Links</option>
@@ -31,16 +56,64 @@
             </select>
         </section>
 
-        <div id="chat-window"></div>
+        <div id="chat-window">
+            <!-- Chat messages go here -->
+        </div>
 
         <form id="chat-form">
             <input type="text" id="chat-input" placeholder="Ask something..." required>
             <button type="submit">Send</button>
         </form>
+
+        <footer>
+            <p>Prince Magami | magamiabu@gmail.com | 3MTT Knowledge Showcase Project</p>
+        </footer>
     </main>
 
-    <footer>
-        <p>Prince Magami | magamiabu@gmail.com | 3MTT Knowledge Showcase Project</p>
-    </footer>
+    <script>
+        const sessionList = document.getElementById('session-list');
+        const chatWindow = document.getElementById('chat-window');
+
+        // Dummy function – replace this with real session fetch
+        function loadSessions() {
+            const sessions = [
+                { id: 1, name: "Cybersecurity Tips", timestamp: "2025-06-25" },
+                { id: 2, name: "Educational Assistant", timestamp: "2025-06-26" },
+            ];
+            sessions.forEach(sess => {
+                const li = document.createElement('li');
+                li.textContent = `${sess.name} - ${sess.timestamp}`;
+                li.onclick = () => loadChat(sess.id);
+                sessionList.appendChild(li);
+            });
+        }
+
+        function appendMessage(sender, text) {
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            msg.innerHTML = `<div class="${sender === 'user' ? 'user' : 'bot'}">${sender}:</div><div>${text}</div>`;
+            chatWindow.appendChild(msg);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        document.getElementById('chat-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value;
+            appendMessage('user', message);
+            input.value = '';
+
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, mode: document.getElementById('mode').value, lang: document.getElementById('lang').value })
+            });
+            const data = await res.json();
+            appendMessage('bot', data.reply);
+        });
+
+        loadSessions();
+    </script>
 </body>
 </html>
+
