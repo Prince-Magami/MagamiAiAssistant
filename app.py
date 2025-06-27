@@ -1,5 +1,5 @@
 # PMAI - Prince Magami AI
-# Monolithic app.py built with FastAPI and Chainlit
+# Monolithic app.py built with FastAPI and Cohere
 # Includes: 7 Modes, Auth, Chat System, Admin Dashboard, Session Tracking, Timed Exam, Job Suggestion
 
 # ------------ IMPORTS ------------
@@ -11,9 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
-import secrets, random, json, hashlib, re, time
-import sqlite3
-import os
+import secrets, random, json, hashlib, re, time, os, sqlite3
 import cohere
 
 # ------------ INITIALIZE APP ------------
@@ -162,7 +160,7 @@ async def process_chat(request: Request):
     user_id = request.cookies.get("user_id")
 
     if not user_id:
-        user_id = None
+        return {"reply": "Please log in to continue."}
 
     prompt = build_prompt(mode, lang, user_input)
     cohere_response = co.chat(model="command-r-plus", message=user_input, preamble=prompt)
@@ -193,4 +191,4 @@ async def admin_page(request: Request):
 # ------------ START ------------
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
-          
+    
